@@ -22,7 +22,7 @@ public class GiftCardTest {
     @Test
     public void test01NewGiftCardStartsUnclaimedWithInitialBalance() {
         GiftCard card = new GiftCard(INITIAL_BALANCE, CARD_ID);
-        assertFalse(card.claimed);
+        assertFalse(card.isClaimed());
         assertEquals(INITIAL_BALANCE, card.balance);
     }
 
@@ -30,7 +30,7 @@ public class GiftCardTest {
     public void test02ClaimCardSetsOwnerAndClaimedTrue() {
         GiftCard card = new GiftCard(INITIAL_BALANCE, CARD_ID);
         card.claimCard(OWNER_ID);
-        assertTrue(card.claimed);
+        assertTrue(card.isClaimed());
         assertEquals(OWNER_ID, card.ownerId);
     }
 
@@ -49,6 +49,14 @@ public class GiftCardTest {
             GiftCard card = new GiftCard(INITIAL_BALANCE, CARD_ID);
             card.charge(NON_POSITIVE_AMOUNT, T1);
         }, INVALID_AMOUNT_MESSAGE);
+    }
+
+    @Test
+    public void test05IsClaimedReflectsClaimState() {
+        GiftCard card = new GiftCard(INITIAL_BALANCE, CARD_ID);
+        assertFalse(card.isClaimed());
+        card.claimCard(OWNER_ID);
+        assertTrue(card.isClaimed());
     }
 
     private void assertThrowsLike(Executable executable, String message) {
