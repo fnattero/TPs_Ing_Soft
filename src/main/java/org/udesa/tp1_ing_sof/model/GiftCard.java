@@ -34,7 +34,7 @@ public class GiftCard {
     }
 
     public boolean isClaimed() {
-        return state.isClaimed();
+        return state.isClaimed();//ping
     }
 
     private static abstract class GiftCardState {
