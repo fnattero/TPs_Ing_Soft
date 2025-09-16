@@ -22,6 +22,9 @@ public class GiftCard {
     }
 
     public void charge(int amount, LocalDateTime time){
+        if (amount <= 0) {
+            throw new RuntimeException("Invalid amount");
+        }
         this.balance -= amount;
         transactions.add(new Transaction(amount, time));
     }

@@ -15,7 +15,7 @@ public class SystemFacade {
     private final Map<String, Integer> tokens;
     private final Clock clock;
     private int id = 0;
-    private Map<String, UserSession> UserSessions = new HashMap();
+    private Map<String, UserSession> UserSessions = new HashMap<>();
 
     public SystemFacade(Map<String, String> validUsers, Map<String, Integer> tokens, List<String> merchantKeys, Clock clock) {
         this.validUsers = validUsers;
