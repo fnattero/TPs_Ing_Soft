@@ -112,7 +112,7 @@ public class GiftCard {
                 throw new RuntimeException(InsufficientFundsErrorDescription);
             }
         }
-//a
+
         @Override
         public Integer getOwnerId(GiftCard card) {
             return card.ownerId;
