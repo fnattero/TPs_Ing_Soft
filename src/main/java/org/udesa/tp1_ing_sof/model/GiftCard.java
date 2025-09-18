@@ -11,16 +11,14 @@ public class GiftCard {
     public static final String NotClaimedErrorDescription = "Card not claimed";
     public static final String InsufficientFundsErrorDescription = "Insufficient funds";
 
-    int cardId;
     int ownerId;
     int balance;
     List<Transaction> transactions = new ArrayList<Transaction>();
 
     private GiftCardState state;
 
-    public GiftCard(int balance, int cardId) {
+    public GiftCard(int balance) {
         this.balance = balance;
-        this.cardId = cardId;
         this.state = new UnclaimedState();
     }
 

@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
-public class UserSessionTest {
+public class TokenSessionTest {
 
     private static final int TOKEN = 1;
     private static final String USERNAME = "user";
@@ -16,7 +16,7 @@ public class UserSessionTest {
     public void test01NotExpiredWhenNowIsBeforeExpireTime() {
         Clock expire = new Clock(BASE.plusMinutes(5));
         Clock now = new Clock(BASE);
-        UserSession session = new UserSession(TOKEN, USERNAME, expire);
+        TokenSession session = new TokenSession(TOKEN, USERNAME, expire);
         assertFalse(session.isExpired(now));
     }
 
@@ -24,7 +24,7 @@ public class UserSessionTest {
     public void test02ExpiredWhenNowIsAfterExpireTime() {
         Clock expire = new Clock(BASE.minusMinutes(1));
         Clock now = new Clock(BASE);
-        UserSession session = new UserSession(TOKEN, USERNAME, expire);
+        TokenSession session = new TokenSession(TOKEN, USERNAME, expire);
         assertTrue(session.isExpired(now));
     }
 
@@ -32,7 +32,7 @@ public class UserSessionTest {
     public void test03NotExpiredWhenNowEqualsExpireTime() {
         Clock expire = new Clock(BASE);
         Clock now = new Clock(BASE);
-        UserSession session = new UserSession(TOKEN, USERNAME, expire);
+        TokenSession session = new TokenSession(TOKEN, USERNAME, expire);
         assertFalse(session.isExpired(now));
     }
 }
