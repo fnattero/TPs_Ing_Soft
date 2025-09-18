@@ -107,7 +107,6 @@ public class GiftCard {
             card.balance -= amount;
             card.transactions.add(new Transaction(amount, time));
         }
-        //s
 
         private void ensureValidCharge(GiftCard card, int amount) {
             if (amount <= 0) throw new RuntimeException(InvalidAmountErrorDescription);
