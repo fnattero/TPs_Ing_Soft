@@ -9,7 +9,9 @@ public class GiftCard {
     public static final String AlreadyClaimedErrorDescription = "Already Claimed";
     public static final String InvalidAmountErrorDescription = "Invalid amount";
     public static final String NotClaimedErrorDescription = "Card not claimed";
-    public static final String InsufficientFundsErrorDescription = "Insufficient funds";
+    public static final String InvalidInitialBalanceErrorDescription = "Invalid initial balance";
+    public static final String InvalidOwnerIdErrorDescription = "Invalid owner id";
+    public static final String InsufficientBalanceErrorDescription = "Insufficient balance";
 
     int cardId;
     int ownerId;
@@ -19,6 +21,7 @@ public class GiftCard {
     private GiftCardState state;
 
     public GiftCard(int balance, int cardId) {
+        if (balance <= 0) throw new RuntimeException(InvalidInitialBalanceErrorDescription);
         this.balance = balance;
         this.cardId = cardId;
         this.state = new UnclaimedState();
@@ -66,6 +69,7 @@ public class GiftCard {
     private static class UnclaimedState extends GiftCardState {
         @Override
         public void claimCard(GiftCard card, int ownerId) {
+            if (ownerId <= 0) throw new RuntimeException(InvalidOwnerIdErrorDescription);
             card.ownerId = ownerId;
             card.state = new ClaimedState();
         }
@@ -105,12 +109,8 @@ public class GiftCard {
         }
 
         private void ensureValidCharge(GiftCard card, int amount) {
-            if (amount <= 0) {
-                throw new RuntimeException(InvalidAmountErrorDescription);
-            }
-            if (amount > card.balance) {
-                throw new RuntimeException(InsufficientFundsErrorDescription);
-            }
+            if (amount <= 0) throw new RuntimeException(InvalidAmountErrorDescription);
+            if (amount > card.balance) throw new RuntimeException(InsufficientBalanceErrorDescription);
         }
 
         @Override
