@@ -72,6 +72,7 @@ public class SystemFacadeTest {
     public void test08CantClaimGiftCardWithInvalidToken(){
         assertThrowsLike( () -> systemFacade.claimGiftCard(VALID_GIFT_CARD_ID, -1), systemFacade.invalidTokenErrorDescription);
     }
+    //cant claim invalid gift card
 
     @Test
     public void test10BalanceAfterMerchantCharge(){
@@ -92,6 +93,7 @@ public class SystemFacadeTest {
 
         assertThrowsLike( () -> systemFacade.merchantCharge(200, VALID_GIFT_CARD_ID, "Invalid_MercadoPago_key"), systemFacade.invalidMerchantKeyErrorDescription );
     }
+    //register sale fails,menos precio, mal precio
 
     @Test
     public void test12MerchantCantChargeWithInvalidGiftCardID(){
@@ -117,3 +119,7 @@ public class SystemFacadeTest {
                         .getMessage());
     }
 }
+
+//checkear que no se pueda operar en una tarjeta agena. Checkear transactions de user. sale updates balance. checkear user en charge
+// se puede operar con dos tarjetas.
+//test con dos usuarios.

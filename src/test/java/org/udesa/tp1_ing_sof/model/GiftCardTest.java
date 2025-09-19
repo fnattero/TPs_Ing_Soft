@@ -27,7 +27,7 @@ public class GiftCardTest {
     @Test public void test02GiftCardCanNotBeCreatedWithZeroOrNegativeInitialBalance() {
         assertThrowsLike(() -> new GiftCard(0), GiftCard.InvalidInitialBalanceErrorDescription);
         assertThrowsLike(() -> new GiftCard(-5), GiftCard.InvalidInitialBalanceErrorDescription);
-    }
+    } //separar en dos
 
     @Test public void test03ClaimingSetsOwnerAndClaimed() {
         GiftCard card = newUnclaimedCard();
@@ -39,7 +39,7 @@ public class GiftCardTest {
     @Test public void test04CanNotClaimWithInvalidOwner() {
         GiftCard card = newUnclaimedCard();
         assertThrowsLike(() -> card.claimCard(""), GiftCard.InvalidOwnerIdErrorDescription);
-    }
+    } // revisar, esto es algo de facade, no deberiamos chequear nada de username en giftcard
 
     @Test public void test05CanNotClaimAlreadyClaimedCard() {
         GiftCard card = newUnclaimedCard();
@@ -72,7 +72,7 @@ public class GiftCardTest {
 
     @Test public void test09CanNotChargeNonPositiveAmount() {
         GiftCard card = newClaimedCard();
-        for (int invalid : new int[]{0, -3}) {
+        for (int invalid : new int[]{0, -3}) { //sacar for
             int amount = invalid;
             assertThrowsLike(() -> card.charge(amount, LocalDateTime.now()), GiftCard.InvalidAmountErrorDescription);
         }
@@ -115,3 +115,6 @@ public class GiftCardTest {
         assertThrows(UnsupportedOperationException.class, () -> card.getTransactions().add(null));
     }
 }
+// testear que de error la unclaimed.
+//testear: balance 0, negativo, charge mayor a balance, get balance en unclaimed, get transactions en unclaimed.
+//testear transactions en gral

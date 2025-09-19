@@ -19,7 +19,7 @@ public class SystemFacade {
     private final Clock clock;
     private final Map<Integer, GiftCard> giftCards;
     private Map<Integer, TokenSession> tokenSessions = new HashMap<>();
-    private int id = 0;
+    private int next_token_id = 0;
 
     public SystemFacade(Map<String, String> validUsers, Set<String> merchantKeys, Map<Integer, GiftCard> giftCards, Clock clock) {
         this.validUsers = validUsers;
@@ -29,8 +29,8 @@ public class SystemFacade {
     }
 
     public int createSessionFor( String userName, String pass ) {
-        checkValidUser( userName, pass );
-        int token = id++;
+        checkValidUser( userName, pass ); //dividir esto en dos para checkear user cuadno el merchant haga un charge.
+        int token = next_token_id++;
         tokenSessions.put( token, new TokenSession(userName, clock));
         return token;
     }
@@ -41,42 +41,16 @@ public class SystemFacade {
         return tokenSession;
     }
 
-    private void checkTokenSessionIsActive( int token ) {
-
-        if ( tokenSessions.get(token).isExpired() ) {
-            tokenSessions.remove( token );
-            throw new RuntimeException( sessionHasExpiredErrorDescription );
-        }
-    }
-
-    private void checkValidUser(String userName, String pass) {
-        if ( !pass.equals( validUsers.get( userName ) ) ) {
-            throw new RuntimeException( invalidUserAndOrPasswordErrorDescription );
-        }
-    }
-
-    public boolean sessionExists(int token) {
-        return tokenSessions.containsKey(token) && !tokenSessions.get(token).isExpired();
-    }
-
-    public void claimGiftCard(Integer giftCardId, int token) {
+    public void claimGiftCard(int giftCardId, int token) {
         checkTokenSessionIsActive(token);
-        giftCards.get(giftCardId).claimCard(tokenSessions.get(token).getUsername());
+        giftCards.get(giftCardId).claimCard(tokenSessions.get(token).getUsername()); //hacer el update de la sesion
     }
 
-    public int checkBalance(Integer giftCardId, int token) {
-
+    public int checkBalance(int giftCardId, int token) {
         checkTokenSessionIsActive(token);
         checkValidGiftCard(giftCardId);
         return giftCards.get(giftCardId).getBalance();
-    }
-
-    private void checkValidGiftCard(Integer giftCardId) {
-        if ( !giftCards.containsKey(giftCardId) ) {
-            throw new RuntimeException( invalidGiftCardIDErrorDescription );
-        }
-    }
-
+    } //cambiar a get balance
 
     public void merchantCharge(int amount, Integer giftCardId, String merchantKey) {
         checkValidMerchant(merchantKey);
@@ -85,9 +59,31 @@ public class SystemFacade {
         giftCards.get(giftCardId).charge(amount, clock.getTime());
     }
 
+    private void checkTokenSessionIsActive( int token ) {
+        if (!tokenSessions.containsKey(token)){
+            throw new RuntimeException(invalidTokenErrorDescription);
+        }
+        if ( tokenSessions.get(token).isExpired() ) {
+            tokenSessions.remove( token );
+            throw new RuntimeException( sessionHasExpiredErrorDescription );
+        } //testear esto
+    }
+
+    private void checkValidUser(String userName, String pass) {
+        if ( !pass.equals( validUsers.get( userName ) ) ) {
+            throw new RuntimeException( invalidUserAndOrPasswordErrorDescription );
+        } //chequear que el user este en la lista
+    }
+
     private void CheckValidChargeAmount(int amount) {
         if (amount < 0) {
             throw new RuntimeException( invalidMerchantChargeAmountErrorDescription );
+        } //hacerlo en giftcard
+    }
+
+    private void checkValidGiftCard(Integer giftCardId) {
+        if ( !giftCards.containsKey(giftCardId) ) {
+            throw new RuntimeException( invalidGiftCardIDErrorDescription );
         }
     }
 

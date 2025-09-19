@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 public class TokenSessionTest {
 
-    private static final int TOKEN = 1;
     private static final String USERNAME = "user";
     private static final LocalDateTime BASE = LocalDateTime.of(2025, 1, 2, 3, 4, 5);
 
