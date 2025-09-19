@@ -53,6 +53,18 @@ class TransactionTest {
     }
 
     @Test
+    void testCurrentTimeIsValid() {
+        LocalDateTime almostNow = LocalDateTime.now().minusSeconds(1);
+        assertDoesNotThrow(() -> new Transaction(VALID_AMOUNT, almostNow));
+    }
+
+    @Test
+    void testLargeAmountValue() {
+        Transaction transaction = new Transaction(MAX_AMOUNT, validTime);
+        assertEquals(MAX_AMOUNT, transaction.getAmount());
+    }
+
+    @Test
     void testNegativeAmountThrowsException() {
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
@@ -77,18 +89,6 @@ class TransactionTest {
             () -> new Transaction(VALID_AMOUNT, futureTime)
         );
         assertEquals(TIME_FUTURE_ERROR, exception.getMessage());
-    }
-
-    @Test
-    void testCurrentTimeIsValid() {
-        LocalDateTime almostNow = LocalDateTime.now().minusSeconds(1);
-        assertDoesNotThrow(() -> new Transaction(VALID_AMOUNT, almostNow));
-    }
-
-    @Test
-    void testLargeAmountValue() {
-        Transaction transaction = new Transaction(MAX_AMOUNT, validTime);
-        assertEquals(MAX_AMOUNT, transaction.getAmount());
     }
 
     @Test

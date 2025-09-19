@@ -1,6 +1,5 @@
 package org.udesa.tp1_ing_sof.model;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
@@ -12,6 +11,7 @@ public class GiftCard {
     public static final String InvalidInitialBalanceErrorDescription = "Invalid initial balance";
     public static final String InvalidOwnerIdErrorDescription = "Invalid owner id";
     public static final String InsufficientBalanceErrorDescription = "Insufficient balance";
+    public static final String NotOwnerErrorDescription = "User is not the owner";
 
     String owner;
     int balance;
@@ -25,7 +25,7 @@ public class GiftCard {
     }
 
     public void claimCard(String owner) { state.claimCard(this, owner); }
-    public void charge(int amount, LocalDateTime time) { state.charge(this, amount, time); }
+    public void charge(int amount, String user, Clock clock) { state.charge(this, amount, user, clock); }
     public boolean isClaimed() { return state.isClaimed(); }
     public int getBalance() { return balance; }
     public String getOwner() { return state.getOwner(this); }
@@ -35,7 +35,7 @@ public class GiftCard {
     private static abstract class GiftCardState {
         abstract void claimCard(GiftCard card, String owner);
         abstract boolean isClaimed();
-        abstract void charge(GiftCard card, int amount, LocalDateTime time);
+        abstract void charge(GiftCard card, int amount, String user, Clock clock);
         abstract String getOwner(GiftCard card);
     }
 
@@ -46,17 +46,18 @@ public class GiftCard {
             card.state = new ClaimedState();
         }
         @Override boolean isClaimed() { return false; }
-        @Override void charge(GiftCard card, int amount, LocalDateTime time) { throw new RuntimeException(NotClaimedErrorDescription); }
+        @Override void charge(GiftCard card, int amount, String user, Clock clock) { throw new RuntimeException(NotClaimedErrorDescription); }
         @Override String getOwner(GiftCard card) { return null; }
     }
 
     private static class ClaimedState extends GiftCardState {
         @Override void claimCard(GiftCard card, String owner) { throw new RuntimeException(AlreadyClaimedErrorDescription); }
         @Override boolean isClaimed() { return true; }
-        @Override void charge(GiftCard card, int amount, LocalDateTime time) {
+        @Override void charge(GiftCard card, int amount, String user, Clock clock) {
             validateCharge(card, amount);
+            validateOwnership(card, user);
             card.balance -= amount;
-            card.transactions.add(new Transaction(amount, time));
+            card.transactions.add(new Transaction(amount, clock.getTime()));
         }
         @Override String getOwner(GiftCard card) { return card.owner; }
     }
@@ -66,6 +67,7 @@ public class GiftCard {
     private static void validateClaimOwner(String owner) { checkOwnerNotBlank(owner); }
     private static void checkOwnerNotBlank(String owner) { if (owner == null || owner.isBlank()) throw new RuntimeException(InvalidOwnerIdErrorDescription); }
     private static void validateCharge(GiftCard card, int amount) { checkAmountPositive(amount); checkSufficientBalance(card, amount); }
+    private static void validateOwnership(GiftCard card, String user) { if (!card.isOwnedBy(user)) throw new RuntimeException(NotOwnerErrorDescription); }
     private static void checkAmountPositive(int amount) { if (amount <= 0) throw new RuntimeException(InvalidAmountErrorDescription); }
     private static void checkSufficientBalance(GiftCard card, int amount) { if (amount > card.balance) throw new RuntimeException(InsufficientBalanceErrorDescription); }
 }
