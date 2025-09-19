@@ -2,6 +2,7 @@ package org.udesa.tp1_ing_sof.model;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.function.Executable;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDateTime;
@@ -66,37 +67,25 @@ class TransactionTest {
 
     @Test
     void testNegativeAmountThrowsException() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> new Transaction(NEGATIVE_AMOUNT, validTime)
-        );
-        assertEquals(AMOUNT_NON_NEGATIVE_ERROR, exception.getMessage());
+        assertThrowsLike(() -> new Transaction(NEGATIVE_AMOUNT, validTime),AMOUNT_NON_NEGATIVE_ERROR);
     }
 
     @Test
     void testNullTimeThrowsException() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> new Transaction(VALID_AMOUNT, null)
-        );
-        assertEquals(TIME_NULL_ERROR, exception.getMessage());
+        assertThrowsLike(() -> new Transaction(VALID_AMOUNT, null),TIME_NULL_ERROR);
     }
 
     @Test
     void testFutureTimeThrowsException() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> new Transaction(VALID_AMOUNT, futureTime)
-        );
-        assertEquals(TIME_FUTURE_ERROR, exception.getMessage());
+        assertThrowsLike(() -> new Transaction(VALID_AMOUNT, futureTime),TIME_FUTURE_ERROR);
     }
 
     @Test
     void testMultipleValidationErrors() {
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> new Transaction(NEGATIVE_AMOUNT, null)
-        );
-        assertEquals(AMOUNT_NON_NEGATIVE_ERROR, exception.getMessage());
+        assertThrowsLike(() -> new Transaction(NEGATIVE_AMOUNT, null),AMOUNT_NON_NEGATIVE_ERROR);
+    }
+
+    private void assertThrowsLike(Executable executable, String message) {
+        assertEquals(message, assertThrows(Exception.class, executable).getMessage());
     }
 }
