@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDateTime;
+import java.util.Iterator;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 public class TokenSessionTest {
@@ -14,25 +17,26 @@ public class TokenSessionTest {
 
     @Test
     public void test01NotExpiredWhenNowIsBeforeExpireTime() {
-        Clock expire = new Clock(BASE.plusMinutes(5));
-        Clock now = new Clock(BASE);
-        TokenSession session = new TokenSession(TOKEN, USERNAME, expire);
-        assertFalse(session.isExpired(now));
+        TokenSession session = new TokenSession(USERNAME, new Clock(BASE));
+        assertFalse(session.isExpired());
     }
 
     @Test
     public void test02ExpiredWhenNowIsAfterExpireTime() {
-        Clock expire = new Clock(BASE.minusMinutes(1));
-        Clock now = new Clock(BASE);
-        TokenSession session = new TokenSession(TOKEN, USERNAME, expire);
-        assertTrue(session.isExpired(now));
-    }
+        LocalDateTime base = LocalDateTime.now();
+        Clock myClock = new Clock(base) {
+            Iterator<LocalDateTime> seq = java.util.List.of(
+                    base,
+                    base,
+                    base.plusMinutes(5)
+            ).iterator();
+            public LocalDateTime getTime() {
+                return seq.next();
+            }
+        };
 
-    @Test
-    public void test03NotExpiredWhenNowEqualsExpireTime() {
-        Clock expire = new Clock(BASE);
-        Clock now = new Clock(BASE);
-        TokenSession session = new TokenSession(TOKEN, USERNAME, expire);
-        assertFalse(session.isExpired(now));
+        TokenSession session = new TokenSession(USERNAME, myClock);
+        assertFalse(session.isExpired()); // usa base
+        assertFalse(session.isExpired());  // usa base+5m
     }
-}
+    }

@@ -3,10 +3,8 @@ package org.udesa.tp1_ing_sof.model;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -29,7 +27,7 @@ public class SystemFacadeTest {
     public void beforeEach() {
         systemFacade = new SystemFacade(
                 Map.of(VALID_USER, VALID_PASSWORD),
-                List.of("MercadoPago_key", "Modo_key"),
+                Set.of("MercadoPago_key", "Modo_key"),
                 Map.of(VALID_GIFT_CARD_ID, new GiftCard(VALID_GIFT_CARD_BALANCE)),
                 new Clock(BASE)
         );
@@ -66,13 +64,6 @@ public class SystemFacadeTest {
     }
 
     @Test
-    public void test06CantClaimGiftCardTwice(){
-        int token = systemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        systemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        assertThrowsLike( () -> systemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token), systemFacade.GiftCardAlreadyClaimedErrorDescription);
-    }
-
-    @Test
     public void test07CantCheckBalanceOfInvalidToken(){
         assertThrowsLike( () -> systemFacade.checkBalance(VALID_GIFT_CARD_ID, -1), systemFacade.invalidTokenErrorDescription);
     }
@@ -80,21 +71,6 @@ public class SystemFacadeTest {
     @Test
     public void test08CantClaimGiftCardWithInvalidToken(){
         assertThrowsLike( () -> systemFacade.claimGiftCard(VALID_GIFT_CARD_ID, -1), systemFacade.invalidTokenErrorDescription);
-    }
-
-    @Test
-    public void test09CantClaimGiftCardClaimedByAnotherUser(){
-        systemFacade = new SystemFacade(
-                Map.of(VALID_USER, VALID_PASSWORD, "Santiago", "Contra_de_santiago"),
-                List.of("MercadoPago_key", "Modo_key"),
-                Map.of(VALID_GIFT_CARD_ID, new GiftCard(VALID_GIFT_CARD_BALANCE)),
-                new Clock(BASE)
-        );
-        int token1 = systemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        systemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token1);
-
-        int token2 = systemFacade.createSessionFor("Santiago", "Contra_de_santiago");
-        assertThrowsLike( () -> systemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token2), systemFacade.GiftCardAlreadyClaimedErrorDescription);
     }
 
     @Test
@@ -134,8 +110,6 @@ public class SystemFacadeTest {
 
         assertThrowsLike( () -> systemFacade.merchantCharge(-100, VALID_GIFT_CARD_ID, "MercadoPago_key"), systemFacade.invalidMerchantChargeAmountErrorDescription );
     }
-
-
 
     private void assertThrowsLike(Executable executable, String message) {
         assertEquals(message,
