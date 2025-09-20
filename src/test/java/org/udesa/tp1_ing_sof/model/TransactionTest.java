@@ -30,7 +30,7 @@ class TransactionTest {
     }
 
     @Test
-    void testValidTransaction() {
+    void test01ValidTransaction() {
         Transaction transaction = new Transaction(VALID_AMOUNT, validTime);
         
         assertEquals(VALID_AMOUNT, transaction.getAmount());
@@ -38,7 +38,7 @@ class TransactionTest {
     }
 
     @Test
-    void testValidTransactionWithPastTime() {
+    void test02ValidTransactionWithPastTime() {
         Transaction transaction = new Transaction(VALID_AMOUNT, pastTime);
         
         assertEquals(VALID_AMOUNT, transaction.getAmount());
@@ -46,7 +46,7 @@ class TransactionTest {
     }
 
     @Test
-    void testValidTransactionWithZeroAmount() {
+    void test03ValidTransactionWithZeroAmount() {
         Transaction transaction = new Transaction(ZERO_AMOUNT, validTime);
         
         assertEquals(ZERO_AMOUNT, transaction.getAmount());
@@ -54,34 +54,34 @@ class TransactionTest {
     }
 
     @Test
-    void testCurrentTimeIsValid() {
+    void test04CurrentTimeIsValid() {
         LocalDateTime almostNow = LocalDateTime.now().minusSeconds(1);
         assertDoesNotThrow(() -> new Transaction(VALID_AMOUNT, almostNow));
     }
 
     @Test
-    void testLargeAmountValue() {
+    void test05LargeAmountValue() {
         Transaction transaction = new Transaction(MAX_AMOUNT, validTime);
         assertEquals(MAX_AMOUNT, transaction.getAmount());
     }
 
     @Test
-    void testNegativeAmountThrowsException() {
+    void test06NegativeAmountThrowsException() {
         assertThrowsLike(() -> new Transaction(NEGATIVE_AMOUNT, validTime),AMOUNT_NON_NEGATIVE_ERROR);
     }
 
     @Test
-    void testNullTimeThrowsException() {
+    void test07NullTimeThrowsException() {
         assertThrowsLike(() -> new Transaction(VALID_AMOUNT, null),TIME_NULL_ERROR);
     }
 
     @Test
-    void testFutureTimeThrowsException() {
+    void test08FutureTimeThrowsException() {
         assertThrowsLike(() -> new Transaction(VALID_AMOUNT, futureTime),TIME_FUTURE_ERROR);
     }
 
     @Test
-    void testMultipleValidationErrors() {
+    void test09MultipleValidationErrors() {
         assertThrowsLike(() -> new Transaction(NEGATIVE_AMOUNT, null),AMOUNT_NON_NEGATIVE_ERROR);
     }
 
