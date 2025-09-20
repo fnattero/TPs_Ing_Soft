@@ -1,7 +1,6 @@
 package org.udesa.tp1_ing_sof.model;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,56 +28,54 @@ public class SystemFacade {
     }
 
     public int createSessionFor( String userName, String pass ) {
-        checkValidUser( userName, pass ); //dividir esto en dos para checkear user cuadno el merchant haga un charge.
+        checkValidUser( userName ); //dividir esto en dos para checkear user cuadno el merchant haga un charge.
+        checkValidPassword(userName, pass);
         int token = next_token_id++;
         tokenSessions.put( token, new TokenSession(userName, clock));
         return token;
     }
 
-    private TokenSession tokenSessionIdentifiedAs( int token ) {
-        TokenSession tokenSession = tokenSessions.computeIfAbsent( token, id1 -> { throw new RuntimeException( invalidTokenErrorDescription );} );
-        checkTokenSessionIsActive( token );
-        return tokenSession;
-    }
-
     public void claimGiftCard(int giftCardId, int token) {
+        checkTokenSessionExists(token);
         checkTokenSessionIsActive(token);
         giftCards.get(giftCardId).claimCard(tokenSessions.get(token).getUsername()); //hacer el update de la sesion
     }
 
-    public int checkBalance(int giftCardId, int token) {
+    public int getGiftCardBalance(int giftCardId, int token) {
+        checkTokenSessionExists(token);
         checkTokenSessionIsActive(token);
         checkValidGiftCard(giftCardId);
-        return giftCards.get(giftCardId).getBalance();
-    } //cambiar a get balance
-
-    public void merchantCharge(int amount, Integer giftCardId, String merchantKey) {
-        checkValidMerchant(merchantKey);
-        checkValidGiftCard(giftCardId);
-        CheckValidChargeAmount(amount);
-        giftCards.get(giftCardId).charge(amount, clock.getTime());
+        return giftCards.get(giftCardId).getBalance(tokenSessions.get(token).getUsername());
     }
 
-    private void checkTokenSessionIsActive( int token ) {
+    public void chargeGiftCard(int amount, Integer giftCardId, String merchantKey, String userName) {
+        checkValidMerchant(merchantKey);
+        checkValidGiftCard(giftCardId);
+        giftCards.get(giftCardId).charge(amount, userName, clock);
+    }
+
+    private void checkTokenSessionExists(int token) {
         if (!tokenSessions.containsKey(token)){
             throw new RuntimeException(invalidTokenErrorDescription);
         }
+    }
+
+    private void checkTokenSessionIsActive( int token ) {
         if ( tokenSessions.get(token).isExpired() ) {
             tokenSessions.remove( token );
             throw new RuntimeException( sessionHasExpiredErrorDescription );
         } //testear esto
     }
 
-    private void checkValidUser(String userName, String pass) {
+    private void checkValidUser(String userName) {
+        if (!validUsers.containsKey(userName)) {
+            throw new RuntimeException(invalidUserAndOrPasswordErrorDescription);
+        }
+    }
+    private void checkValidPassword(String userName, String pass) {
         if ( !pass.equals( validUsers.get( userName ) ) ) {
             throw new RuntimeException( invalidUserAndOrPasswordErrorDescription );
-        } //chequear que el user este en la lista
-    }
-
-    private void CheckValidChargeAmount(int amount) {
-        if (amount < 0) {
-            throw new RuntimeException( invalidMerchantChargeAmountErrorDescription );
-        } //hacerlo en giftcard
+        }
     }
 
     private void checkValidGiftCard(Integer giftCardId) {

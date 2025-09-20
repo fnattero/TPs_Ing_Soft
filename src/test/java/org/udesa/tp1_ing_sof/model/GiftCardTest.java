@@ -26,8 +26,7 @@ public class GiftCardTest {
     }
 
     @Test public void test04ClaimingSetsOwnerAndClaimed() {
-        GiftCard card = newUnclaimedCard();
-        card.claimCard(VALID_OWNER);
+        GiftCard card = newClaimedCard();
         assertTrue(card.isClaimed());
         assertEquals(VALID_OWNER, card.getOwner());
     }

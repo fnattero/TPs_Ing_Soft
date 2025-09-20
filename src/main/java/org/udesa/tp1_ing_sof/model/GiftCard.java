@@ -40,26 +40,26 @@ public class GiftCard {
     }
 
     private static class UnclaimedState extends GiftCardState {
-        @Override void claimCard(GiftCard card, String owner) {
+        void claimCard(GiftCard card, String owner) {
             validateClaimOwner(owner);
             card.owner = owner;
             card.state = new ClaimedState();
         }
-        @Override boolean isClaimed() { return false; }
-        @Override void charge(GiftCard card, int amount, String user, Clock clock) { throw new RuntimeException(NotClaimedErrorDescription); }
-        @Override String getOwner(GiftCard card) { return null; }
+        boolean isClaimed() { return false; }
+        void charge(GiftCard card, int amount, String user, Clock clock) { throw new RuntimeException(NotClaimedErrorDescription); }
+        String getOwner(GiftCard card) { return null; }
     }
 
     private static class ClaimedState extends GiftCardState {
-        @Override void claimCard(GiftCard card, String owner) { throw new RuntimeException(AlreadyClaimedErrorDescription); }
-        @Override boolean isClaimed() { return true; }
-        @Override void charge(GiftCard card, int amount, String user, Clock clock) {
+        void claimCard(GiftCard card, String owner) { throw new RuntimeException(AlreadyClaimedErrorDescription); }
+        boolean isClaimed() { return true; }
+        void charge(GiftCard card, int amount, String user, Clock clock) {
             validateCharge(card, amount);
             validateOwnership(card, user);
             card.balance -= amount;
             card.transactions.add(new Transaction(amount, clock.getTime()));
         }
-        @Override String getOwner(GiftCard card) { return card.owner; }
+        String getOwner(GiftCard card) { return card.owner; }
     }
 
     private static void validateInitialBalance(int balance) { checkInitialBalancePositive(balance); }
