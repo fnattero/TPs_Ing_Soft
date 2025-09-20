@@ -11,10 +11,10 @@ public class GiftCardTest {
     private static final int VALID_INITIAL_BALANCE = 100;
     private static final String VALID_OWNER = "owner-42";
 
-    @Test public void test01GiftCardStartsUnclaimedWithInitialBalance() {
+    @Test public void test01NewGiftCardStartsUnclaimedWithoutOwner() {
         GiftCard card = newUnclaimedCard();
         assertFalse(card.isClaimed());
-        assertEquals(VALID_INITIAL_BALANCE, card.getBalance());
+        assertNull(card.getOwner());
     }
 
     @Test public void test02GiftCardCanNotBeCreatedWithZeroInitialBalance() {
@@ -29,88 +29,107 @@ public class GiftCardTest {
         GiftCard card = newClaimedCard();
         assertTrue(card.isClaimed());
         assertEquals(VALID_OWNER, card.getOwner());
+        assertEquals(VALID_INITIAL_BALANCE, card.getBalance(VALID_OWNER));
     }
 
-    @Test public void test05CanNotClaimAlreadyClaimedCard() {
+    @Test public void test05ClaimingWithInvalidOwnerFails() {
+        GiftCard card = newUnclaimedCard();
+        assertThrowsLike(() -> card.claimCard(null), GiftCard.InvalidOwnerNameDescription);
+        assertThrowsLike(() -> card.claimCard("   "), GiftCard.InvalidOwnerNameDescription);
+    }
+
+    @Test public void test06CanNotClaimAlreadyClaimedCard() {
         GiftCard card = newUnclaimedCard();
         card.claimCard(VALID_OWNER);
         assertThrowsLike(() -> card.claimCard("other-owner"), GiftCard.AlreadyClaimedErrorDescription);
     }
 
-    @Test public void test06IsClaimedReflectsState() {
+    @Test public void test07IsClaimedReflectsState() {
         GiftCard card = newUnclaimedCard();
         assertFalse(card.isClaimed());
         card.claimCard(VALID_OWNER);
         assertTrue(card.isClaimed());
     }
 
-    @Test public void test07GetOwnerNullBeforeClaim() {
+    @Test public void test08GetOwnerNullBeforeClaim() {
         GiftCard card = newUnclaimedCard();
         assertNull(card.getOwner());
     }
 
-    @Test public void test08IsOwnedBy() {
+    @Test public void test09IsOwnedBy() {
         GiftCard card = newUnclaimedCard();
         card.claimCard(VALID_OWNER);
         assertTrue(card.isOwnedBy(VALID_OWNER));
         assertFalse(card.isOwnedBy("another"));
     }
 
-    @Test public void test09GetBalanceOnUnclaimedCard() {
+    @Test public void test10UnclaimedCardCanNotExposeBalance() {
         GiftCard card = newUnclaimedCard();
-        assertEquals(VALID_INITIAL_BALANCE, card.getBalance());
+        assertThrowsLike(() -> card.getBalance(null), GiftCard.CantGetBalanceOfUnclaimedCardErrorDescription);
+        assertThrowsLike(() -> card.getBalance("any-user"), GiftCard.CantGetBalanceOfUnclaimedCardErrorDescription);
     }
 
-    @Test public void test10ChargeReducesBalanceAndAddsTransaction() {
+    @Test public void test11ClaimedCardRejectsBalanceRequestsFromNonOwner() {
         GiftCard card = newClaimedCard();
-        int before = card.getBalance();
+        assertThrowsLike(() -> card.getBalance("wrong-user"), GiftCard.NotOwnerErrorDescription);
+    }
+
+    @Test public void test12ChargeReducesBalanceAndAddsTransaction() {
+        GiftCard card = newClaimedCard();
+        int before = card.getBalance(VALID_OWNER);
         Clock clock = new Clock(LocalDateTime.of(2025, 1, 2, 3, 4));
         card.charge(30, VALID_OWNER, clock);
-        assertEquals(before - 30, card.getBalance());
+        assertEquals(before - 30, card.getBalance(VALID_OWNER));
         assertEquals(1, card.getTransactions().size());
     }
 
-    @Test public void test11MultipleChargesAccumulate() {
+    @Test public void test13MultipleChargesAccumulate() {
         GiftCard card = newClaimedCard();
         Clock clock1 = new Clock(LocalDateTime.of(2025, 1, 2, 3, 4));
         Clock clock2 = new Clock(LocalDateTime.of(2025, 2, 3, 4, 5));
         card.charge(30, VALID_OWNER, clock1);
         card.charge(20, VALID_OWNER, clock2);
-        assertEquals(VALID_INITIAL_BALANCE - 50, card.getBalance());
+        assertEquals(VALID_INITIAL_BALANCE - 50, card.getBalance(VALID_OWNER));
         assertEquals(2, card.getTransactions().size());
     }
 
-    @Test public void test12CanNotChargeIfNotClaimed() {
+    @Test public void test14CanNotChargeIfNotClaimed() {
         GiftCard card = newUnclaimedCard();
         assertThrowsLike(() -> card.charge(10, VALID_OWNER, new Clock(LocalDateTime.now())), GiftCard.NotClaimedErrorDescription);
     }
 
-    @Test public void test13CanNotChargeIfNotOwner() {
+    @Test public void test15CanNotChargeIfNotOwner() {
         GiftCard card = newClaimedCard();
         assertThrowsLike(() -> card.charge(10, "wrong-user", new Clock(LocalDateTime.now())), GiftCard.NotOwnerErrorDescription);
     }
 
-    @Test public void test14CanNotChargeZeroAmount() {
+    @Test public void test16ClaimedCardRejectsChargeWithInvalidUser() {
+        GiftCard card = newClaimedCard();
+        assertThrowsLike(() -> card.charge(10, "", new Clock(LocalDateTime.now())), GiftCard.NotOwnerErrorDescription);
+        assertThrowsLike(() -> card.charge(10, null, new Clock(LocalDateTime.now())), GiftCard.NotOwnerErrorDescription);
+    }
+
+    @Test public void test17CanNotChargeZeroAmount() {
         GiftCard card = newClaimedCard();
         assertThrowsLike(() -> card.charge(0, VALID_OWNER, new Clock(LocalDateTime.now())), GiftCard.InvalidAmountErrorDescription);
     }
 
-    @Test public void test15CanNotChargeNegativeAmount() {
+    @Test public void test18CanNotChargeNegativeAmount() {
         GiftCard card = newClaimedCard();
         assertThrowsLike(() -> card.charge(-3, VALID_OWNER, new Clock(LocalDateTime.now())), GiftCard.InvalidAmountErrorDescription);
     }
 
-    @Test public void test16CanNotChargeMoreThanBalance() {
+    @Test public void test19CanNotChargeMoreThanBalance() {
         GiftCard card = newClaimedCard();
         assertThrowsLike(() -> card.charge(VALID_INITIAL_BALANCE + 1, VALID_OWNER, new Clock(LocalDateTime.now())), GiftCard.InsufficientBalanceErrorDescription);
     }
 
-    @Test public void test17GetTransactionsOnUnclaimedCard() {
+    @Test public void test20GetTransactionsOnUnclaimedCard() {
         GiftCard card = newUnclaimedCard();
         assertTrue(card.getTransactions().isEmpty());
     }
 
-    @Test public void test18TransactionsHaveOrderOfAddition() {
+    @Test public void test21TransactionsHaveOrderOfAddition() {
         GiftCard card = newClaimedCard();
         Clock clock1 = new Clock(LocalDateTime.of(2025, 1, 2, 3, 4));
         Clock clock2 = new Clock(LocalDateTime.of(2025, 1, 2, 3, 5));
@@ -119,42 +138,42 @@ public class GiftCardTest {
         assertEquals(2, card.getTransactions().size());
     }
 
-    @Test public void test19TransactionHasCorrectAmountAndTime() {
+    @Test public void test22TransactionHasCorrectAmountAndTime() {
         GiftCard card = newClaimedCard();
         LocalDateTime chargeTime = LocalDateTime.of(2025, 1, 2, 3, 4);
         Clock clock = new Clock(chargeTime);
         card.charge(25, VALID_OWNER, clock);
-        
+
         Transaction transaction = card.getTransactions().get(0);
         assertEquals(25, transaction.getAmount());
         assertEquals(chargeTime, transaction.getTime());
     }
 
-    @Test public void test20TransactionsAreImmutable() {
+    @Test public void test23TransactionsAreImmutable() {
         GiftCard card = newClaimedCard();
         card.charge(15, VALID_OWNER, new Clock(LocalDateTime.now()));
-        
+
         Transaction transaction = card.getTransactions().get(0);
         assertEquals(15, transaction.getAmount());
     }
 
-    @Test public void test21MultipleTransactionsHaveCorrectDetails() {
+    @Test public void test24MultipleTransactionsHaveCorrectDetails() {
         GiftCard card = newClaimedCard();
         LocalDateTime time1 = LocalDateTime.of(2025, 1, 1, 10, 0);
         LocalDateTime time2 = LocalDateTime.of(2025, 1, 2, 11, 0);
         Clock clock1 = new Clock(time1);
         Clock clock2 = new Clock(time2);
-        
+
         card.charge(20, VALID_OWNER, clock1);
         card.charge(30, VALID_OWNER, clock2);
-        
+
         assertEquals(20, card.getTransactions().get(0).getAmount());
         assertEquals(time1, card.getTransactions().get(0).getTime());
         assertEquals(30, card.getTransactions().get(1).getAmount());
         assertEquals(time2, card.getTransactions().get(1).getTime());
     }
 
-    @Test public void test22TransactionsListIsUnmodifiable() {
+    @Test public void test25TransactionsListIsUnmodifiable() {
         GiftCard card = newClaimedCard();
         card.charge(5, VALID_OWNER, new Clock(LocalDateTime.now()));
         assertThrows(UnsupportedOperationException.class, () -> card.getTransactions().add(null));
