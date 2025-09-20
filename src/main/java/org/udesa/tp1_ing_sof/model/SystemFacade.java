@@ -1,6 +1,7 @@
 package org.udesa.tp1_ing_sof.model;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,7 +12,6 @@ public class SystemFacade {
     public static String invalidTokenErrorDescription = "Invalid token";
     public static String invalidGiftCardIDErrorDescription =  "Invalid gift card ID";
     public static String invalidMerchantKeyErrorDescription = "Invalid merchant key";
-    public static String invalidMerchantChargeAmountErrorDescription =  "Invalid merchant charge amount";
 
     private final Map<String, String> validUsers;
     private final Set<String> merchantKeys; //que sea un set
@@ -28,7 +28,7 @@ public class SystemFacade {
     }
 
     public int createSessionFor( String userName, String pass ) {
-        checkValidUser( userName ); //dividir esto en dos para checkear user cuadno el merchant haga un charge.
+        checkValidUser( userName );
         checkValidPassword(userName, pass);
         int token = next_token_id++;
         tokenSessions.put( token, new TokenSession(userName, clock));
@@ -38,20 +38,31 @@ public class SystemFacade {
     public void claimGiftCard(int giftCardId, int token) {
         checkTokenSessionExists(token);
         checkTokenSessionIsActive(token);
-        giftCards.get(giftCardId).claimCard(tokenSessions.get(token).getUsername()); //hacer el update de la sesion
+        checkValidGiftCard(giftCardId);
+        tokenSessions.get(token).updateLastAccess();
+        giftCards.get(giftCardId).claimCard(tokenSessions.get(token).getUsername());
     }
 
     public int getGiftCardBalance(int giftCardId, int token) {
         checkTokenSessionExists(token);
         checkTokenSessionIsActive(token);
         checkValidGiftCard(giftCardId);
+        tokenSessions.get(token).updateLastAccess();
         return giftCards.get(giftCardId).getBalance(tokenSessions.get(token).getUsername());
     }
 
     public void chargeGiftCard(int amount, Integer giftCardId, String merchantKey, String userName) {
         checkValidMerchant(merchantKey);
         checkValidGiftCard(giftCardId);
-        giftCards.get(giftCardId).charge(amount, userName, clock);
+        giftCards.get(giftCardId).charge(amount, merchantKey, userName, clock);
+    }
+
+    public List<Transaction> getTransactionsFor(Integer giftCardId, int token) {
+        checkTokenSessionExists(token);
+        checkTokenSessionIsActive(token);
+        checkValidGiftCard(giftCardId);
+        tokenSessions.get(token).updateLastAccess();
+        return giftCards.get(giftCardId).getTransactions(tokenSessions.get(token).getUsername());
     }
 
     private void checkTokenSessionExists(int token) {
@@ -64,7 +75,7 @@ public class SystemFacade {
         if ( tokenSessions.get(token).isExpired() ) {
             tokenSessions.remove( token );
             throw new RuntimeException( sessionHasExpiredErrorDescription );
-        } //testear esto
+        }
     }
 
     private void checkValidUser(String userName) {
@@ -86,7 +97,8 @@ public class SystemFacade {
 
     private void checkValidMerchant(String merchantKey) {
         if ( !merchantKeys.contains( merchantKey ) ) {
-            throw new RuntimeException(  );
+            throw new RuntimeException( invalidMerchantKeyErrorDescription );
         }
     }
+
 }

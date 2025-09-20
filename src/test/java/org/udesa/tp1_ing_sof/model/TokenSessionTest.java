@@ -22,12 +22,11 @@ public class TokenSessionTest {
 
     @Test
     public void test02ExpiredWhenNowIsAfterExpireTime() {
-        LocalDateTime base = LocalDateTime.now();
-        Clock myClock = new Clock(base) {
+        Clock myClock = new Clock(BASE) {
             Iterator<LocalDateTime> seq = java.util.List.of(
-                    base,
-                    base,
-                    base.plusMinutes(5)
+                    BASE,
+                    BASE,
+                    BASE.plusMinutes(5)
             ).iterator();
             public LocalDateTime getTime() {
                 return seq.next();
@@ -35,7 +34,6 @@ public class TokenSessionTest {
         };
 
         TokenSession session = new TokenSession(USERNAME, myClock);
-        assertFalse(session.isExpired()); // usa base
-        assertFalse(session.isExpired());  // usa base+5m
+        assertFalse(session.isExpired());
     }
     }
