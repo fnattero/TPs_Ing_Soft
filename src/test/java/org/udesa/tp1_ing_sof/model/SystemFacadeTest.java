@@ -399,3 +399,5 @@ public class SystemFacadeTest {
 //sacasr override
 //pasar username
 // chequear que un user con el token de otro pueda ver su balance
+
+//si dos transactions son de la misma tarjeta
