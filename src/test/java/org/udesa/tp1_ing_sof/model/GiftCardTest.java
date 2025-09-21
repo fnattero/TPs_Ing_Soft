@@ -3,16 +3,18 @@ package org.udesa.tp1_ing_sof.model;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDateTime;
+import java.util.Iterator;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
 public class GiftCardTest {
 
-    public static final LocalDateTime VALID_CHARGE_TIME = LocalDateTime.of(2025, 1, 2, 3, 4);
-    private static final int VALID_INITIAL_BALANCE = 100;
-    private static final String VALID_OWNER = "owner-42";
-    private static final String VALID_MERCHANT_KEY = "MercadoPagoKey";
-    private static final String VALID_MERCHANT_KEY_2 = "ModoKey";
+    public static final LocalDateTime BaseChargeTime = LocalDateTime.of(2025, 1, 2, 3, 4);
+    private static final int InitialBalance = 100;
+    private static final String ValidOwner = "OwnerJuan";
+    private static final String ValidMerchantKey = "MercadoPagoKey";
+    private static final String ValidMerchantKey2 = "ModoKey";
 
     @Test public void test01GiftCardCanNotBeCreatedWithZeroInitialBalance() {
         assertThrowsLike(() -> new GiftCard(0), GiftCard.InvalidInitialBalanceErrorDescription);
@@ -31,20 +33,20 @@ public class GiftCardTest {
     @Test public void test04ClaimingSetsOwnerAndClaimed() {
         GiftCard card = newClaimedCard();
         assertTrue(card.isClaimed());
-        assertEquals(VALID_OWNER, card.getOwner());
-        assertEquals(VALID_INITIAL_BALANCE, card.getBalance(VALID_OWNER));
+        assertEquals(ValidOwner, card.getOwner());
+        assertEquals(InitialBalance, card.getBalance(ValidOwner));
     }
 
     @Test public void test05CanNotClaimAlreadyClaimedCard() {
         GiftCard card = newUnclaimedCard();
-        card.claimCard(VALID_OWNER);
+        card.claimCard(ValidOwner);
         assertThrowsLike(() -> card.claimCard("other-owner"), GiftCard.AlreadyClaimedErrorDescription);
     }
 
     @Test public void test06IsClaimedReflectsState() {
         GiftCard card = newUnclaimedCard();
         assertFalse(card.isClaimed());
-        card.claimCard(VALID_OWNER);
+        card.claimCard(ValidOwner);
         assertTrue(card.isClaimed());
     }
 
@@ -55,8 +57,8 @@ public class GiftCardTest {
 
     @Test public void test08IsOwnedBy() {
         GiftCard card = newUnclaimedCard();
-        card.claimCard(VALID_OWNER);
-        assertTrue(card.isOwnedBy(VALID_OWNER));
+        card.claimCard(ValidOwner);
+        assertTrue(card.isOwnedBy(ValidOwner));
         assertFalse(card.isOwnedBy("another"));
     }
 
@@ -72,49 +74,48 @@ public class GiftCardTest {
 
     @Test public void test11CanNotChargeIfNotClaimed() {
         GiftCard card = newUnclaimedCard();
-        assertThrowsLike(() -> card.charge(10, VALID_OWNER, VALID_MERCHANT_KEY, new Clock(LocalDateTime.now())), GiftCard.NotClaimedErrorDescription);
+        assertThrowsLike(() -> card.charge(10, ValidOwner, ValidMerchantKey, new Clock()), GiftCard.CantChargeUnclaimedCardErrorDescription);
     }
 
     @Test public void test12CanNotChargeIfNotOwner() {
         GiftCard card = newClaimedCard();
-        assertThrowsLike(() -> card.charge(10, "wrong-user", VALID_MERCHANT_KEY, new Clock(LocalDateTime.now())), GiftCard.NotOwnerErrorDescription);
+        assertThrowsLike(() -> card.charge(10, "wrong-user", ValidMerchantKey, new Clock()), GiftCard.NotOwnerErrorDescription);
     }
 
     @Test public void test13CanNotChargeZeroAmount() {
         GiftCard card = newClaimedCard();
-        assertThrowsLike(() -> card.charge(0, VALID_OWNER, VALID_MERCHANT_KEY, new Clock(LocalDateTime.now())), GiftCard.InvalidAmountErrorDescription);
+        assertThrowsLike(() -> card.charge(0, ValidOwner, ValidMerchantKey, new Clock()), GiftCard.InvalidAmountErrorDescription);
     }
 
     @Test public void test14CanNotChargeNegativeAmount() {
         GiftCard card = newClaimedCard();
-        assertThrowsLike(() -> card.charge(-3, VALID_OWNER, VALID_MERCHANT_KEY, new Clock(LocalDateTime.now())), GiftCard.InvalidAmountErrorDescription);
+        assertThrowsLike(() -> card.charge(-3, ValidOwner, ValidMerchantKey, new Clock()), GiftCard.InvalidAmountErrorDescription);
     }
 
     @Test public void test15CanNotChargeMoreThanBalance() {
         GiftCard card = newClaimedCard();
-        assertThrowsLike(() -> card.charge(VALID_INITIAL_BALANCE + 1, VALID_OWNER, VALID_MERCHANT_KEY, new Clock(LocalDateTime.now())), GiftCard.InsufficientBalanceErrorDescription);
+        assertThrowsLike(() -> card.charge(InitialBalance + 1, ValidOwner, ValidMerchantKey, new Clock()), GiftCard.InsufficientBalanceErrorDescription);
     }
 
     @Test public void test16ChargeReducesBalanceAndAddsTransaction() {
         GiftCard card = newClaimedCard();
-        int before = card.getBalance(VALID_OWNER);
-        Clock clock = new Clock(VALID_CHARGE_TIME);
-        card.charge(30, VALID_MERCHANT_KEY, VALID_OWNER, clock);
-        assertEquals(before - 30, card.getBalance(VALID_OWNER));
-        assertEquals(1, card.getTransactions(VALID_OWNER).size());
+        int before = card.getBalance(ValidOwner);
+        card.charge(30, ValidMerchantKey, ValidOwner, new Clock());
+        assertEquals(before - 30, card.getBalance(ValidOwner));
+        assertEquals(1, card.getTransactions(ValidOwner).size());
     }
 
     @Test public void test17MultipleChargesAccumulate() {
         GiftCard card = newClaimedCard();
-        card.charge(30, VALID_MERCHANT_KEY, VALID_OWNER, new Clock(VALID_CHARGE_TIME));
-        card.charge(20, VALID_MERCHANT_KEY, VALID_OWNER, new Clock(VALID_CHARGE_TIME.plusDays(1)));
-        assertEquals(VALID_INITIAL_BALANCE - 50, card.getBalance(VALID_OWNER));
-        assertEquals(2, card.getTransactions(VALID_OWNER).size());
+        card.charge(30, ValidMerchantKey, ValidOwner, new Clock());
+        card.charge(20, ValidMerchantKey, ValidOwner, new Clock());
+        assertEquals(InitialBalance - 50, card.getBalance(ValidOwner));
+        assertEquals(2, card.getTransactions(ValidOwner).size());
     }
 
     @Test public void test18CantGetTransactionsOnUnclaimedCard() {
         GiftCard card = newUnclaimedCard();
-        assertThrowsLike(() -> card.getTransactions(VALID_OWNER), GiftCard.CantGetTransactionsOfUnclaimedCardErrorDescription);
+        assertThrowsLike(() -> card.getTransactions(ValidOwner), GiftCard.CantGetTransactionsOfUnclaimedCardErrorDescription);
     }
 
     @Test public void test19CantGetTransactionsOfInvalidOwner() {
@@ -124,72 +125,72 @@ public class GiftCardTest {
 
     @Test public void test20TransactionHasCorrectTime() {
         GiftCard card = newClaimedCard();
-        card.charge(25, VALID_MERCHANT_KEY, VALID_OWNER, new Clock(VALID_CHARGE_TIME));
+        Clock clock = seqClock(BaseChargeTime, BaseChargeTime);
+        card.charge(25, ValidMerchantKey, ValidOwner, clock);
 
-        Transaction transaction = card.getTransactions(VALID_OWNER).get(0);
-        assertEquals(VALID_CHARGE_TIME, transaction.getTime());
+        Transaction transaction = card.getTransactions(ValidOwner).get(0);
+        assertEquals(BaseChargeTime, transaction.getTime());
     }
 
     @Test public void test21TransactionHasCorrectAmount() {
         GiftCard card = newClaimedCard();
-        card.charge(25, VALID_MERCHANT_KEY, VALID_OWNER, new Clock(VALID_CHARGE_TIME));
+        card.charge(25, ValidMerchantKey, ValidOwner, new Clock());
 
-        Transaction transaction = card.getTransactions(VALID_OWNER).get(0);
+        Transaction transaction = card.getTransactions(ValidOwner).get(0);
         assertEquals(25, transaction.getAmount());
     }
 
     @Test public void test22TransactionHasCorrectMerchantKey() {
         GiftCard card = newClaimedCard();
-        card.charge(25, VALID_MERCHANT_KEY, VALID_OWNER, new Clock(VALID_CHARGE_TIME));
+        card.charge(25, ValidMerchantKey, ValidOwner, new Clock());
 
-        Transaction transaction = card.getTransactions(VALID_OWNER).get(0);
-        assertEquals(VALID_MERCHANT_KEY, transaction.getMerchantKey());
+        Transaction transaction = card.getTransactions(ValidOwner).get(0);
+        assertEquals(ValidMerchantKey, transaction.getMerchantKey());
     }
 
     @Test public void test23TransactionsHaveOrderOfAddition() {
         GiftCard card = newClaimedCard();
-        card.charge(10, VALID_MERCHANT_KEY, VALID_OWNER, new Clock(LocalDateTime.now()));
-        card.charge(5, VALID_MERCHANT_KEY, VALID_OWNER, new Clock(LocalDateTime.now()));
-        assertEquals(2, card.getTransactions(VALID_OWNER).size());
-        assertEquals(10, card.getTransactions(VALID_OWNER).get(0).getAmount());
-        assertEquals(5, card.getTransactions(VALID_OWNER).get(1).getAmount());
+        card.charge(10, ValidMerchantKey, ValidOwner, new Clock());
+        card.charge(5, ValidMerchantKey, ValidOwner, new Clock());
+        assertEquals(2, card.getTransactions(ValidOwner).size());
+        assertEquals(10, card.getTransactions(ValidOwner).get(0).getAmount());
+        assertEquals(5, card.getTransactions(ValidOwner).get(1).getAmount());
     }
 
-    @Test public void test24TransactionsAreImmutable() {
+    @Test public void test24MultipleTransactionsInDifferentTimesHaveCorrectAmount() {
         GiftCard card = newClaimedCard();
-        card.charge(15, VALID_MERCHANT_KEY, VALID_OWNER, new Clock(LocalDateTime.now()));
 
-        assertEquals(15, card.getTransactions(VALID_OWNER).get(0).getAmount());
+        Clock clock = seqClock(BaseChargeTime, BaseChargeTime.plusMinutes(1));
+
+        card.charge(20, ValidMerchantKey, ValidOwner, clock);
+        card.charge(30, ValidMerchantKey2, ValidOwner, clock);
+
+        assertEquals(20, card.getTransactions(ValidOwner).get(0).getAmount());
+        assertEquals(30, card.getTransactions(ValidOwner).get(1).getAmount());
     }
 
-    @Test public void test25MultipleTransactionsHaveAmount() {
+    @Test public void test25MultipleTransactionsInDifferentTimesHaveCorrectTime() {
         GiftCard card = newClaimedCard();
 
-        card.charge(20, VALID_MERCHANT_KEY, VALID_OWNER, new Clock(VALID_CHARGE_TIME));
-        card.charge(30, VALID_MERCHANT_KEY_2, VALID_OWNER, new Clock(VALID_CHARGE_TIME.plusMinutes(1)));
+        Clock clock = seqClock(BaseChargeTime, BaseChargeTime.plusMinutes(1));
 
-        assertEquals(20, card.getTransactions(VALID_OWNER).get(0).getAmount());
-        assertEquals(30, card.getTransactions(VALID_OWNER).get(1).getAmount());
+        card.charge(20, ValidMerchantKey, ValidOwner, clock);
+        card.charge(30, ValidMerchantKey2, ValidOwner, clock);
+
+        assertEquals(BaseChargeTime, card.getTransactions(ValidOwner).get(0).getTime());
+        assertEquals(BaseChargeTime.plusMinutes(1), card.getTransactions(ValidOwner).get(1).getTime());
     }
 
-    @Test public void test26MultipleTransactionsHaveTime() {
+    @Test public void test26MultipleTransactionsInDifferentTimesHaveCorrectMerchantKey() {
         GiftCard card = newClaimedCard();
 
-        card.charge(20, VALID_MERCHANT_KEY, VALID_OWNER, new Clock(VALID_CHARGE_TIME));
-        card.charge(30, VALID_MERCHANT_KEY_2, VALID_OWNER, new Clock(VALID_CHARGE_TIME.plusMinutes(1)));
+        Clock clock = seqClock(BaseChargeTime, BaseChargeTime.plusMinutes(1));
 
-        assertEquals(VALID_CHARGE_TIME, card.getTransactions(VALID_OWNER).get(0).getTime());
-        assertEquals(VALID_CHARGE_TIME.plusMinutes(1), card.getTransactions(VALID_OWNER).get(1).getTime());
-    }
+        card.charge(20, ValidMerchantKey, ValidOwner, clock);
+        card.charge(30, ValidMerchantKey2, ValidOwner, clock);
 
-    @Test public void test27MultipleTransactionsHaveMerchantKey() {
-        GiftCard card = newClaimedCard();
-
-        card.charge(20, VALID_MERCHANT_KEY, VALID_OWNER, new Clock(VALID_CHARGE_TIME));
-        card.charge(30, VALID_MERCHANT_KEY_2, VALID_OWNER, new Clock(VALID_CHARGE_TIME.plusMinutes(1)));
-
-        assertEquals(VALID_MERCHANT_KEY,  card.getTransactions(VALID_OWNER).get(0).getMerchantKey());
-        assertEquals(VALID_MERCHANT_KEY_2,  card.getTransactions(VALID_OWNER).get(1).getMerchantKey());
+        assertEquals(ValidMerchantKey,  card.getTransactions(ValidOwner).get(0).getMerchantKey());
+        assertEquals(ValidMerchantKey2,  card.getTransactions(ValidOwner).get(1).getMerchantKey());
     }
 
 
@@ -197,6 +198,13 @@ public class GiftCardTest {
         assertEquals(message, assertThrows(Exception.class, executable).getMessage());
     }
 
-    private GiftCard newUnclaimedCard() { return new GiftCard(VALID_INITIAL_BALANCE); }
-    private GiftCard newClaimedCard() { GiftCard c = newUnclaimedCard(); c.claimCard(VALID_OWNER); return c; }
+    private GiftCard newUnclaimedCard() { return new GiftCard(InitialBalance); }
+    private GiftCard newClaimedCard() { GiftCard c = newUnclaimedCard(); c.claimCard(ValidOwner); return c; }
+
+    private Clock seqClock(LocalDateTime... times) {
+        return new Clock() {
+            Iterator<LocalDateTime> seq = java.util.List.of(times).iterator();
+            public LocalDateTime getTime() { return seq.next(); }
+        };
+    }
 }

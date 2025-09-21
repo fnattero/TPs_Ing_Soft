@@ -2,12 +2,11 @@ package org.udesa.tp1_ing_sof.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Collections;
 
 public class GiftCard {
     public static final String AlreadyClaimedErrorDescription = "Already Claimed";
     public static final String InvalidAmountErrorDescription = "Invalid amount";
-    public static final String NotClaimedErrorDescription = "Card not claimed";
+    public static final String CantChargeUnclaimedCardErrorDescription = "Can't charge unclaimed card";
     public static final String InvalidInitialBalanceErrorDescription = "Invalid initial balance";
     public static final String InsufficientBalanceErrorDescription = "Insufficient balance";
     public static final String NotOwnerErrorDescription = "User is not the owner";
@@ -48,7 +47,7 @@ public class GiftCard {
             card.state = new ClaimedState();
         }
         boolean isClaimed() { return false; }
-        void charge(GiftCard card, String merchantKey, int amount, String user, Clock clock) { throw new RuntimeException(NotClaimedErrorDescription); }
+        void charge(GiftCard card, String merchantKey, int amount, String user, Clock clock) { throw new RuntimeException(CantChargeUnclaimedCardErrorDescription); }
         int getBalance(GiftCard card, String user) { throw new RuntimeException(CantGetBalanceOfUnclaimedCardErrorDescription); }
         String getOwner(GiftCard card) { return null; }
         List<Transaction> getTransactions(GiftCard card, String user) { throw new RuntimeException(CantGetTransactionsOfUnclaimedCardErrorDescription); }

@@ -54,6 +54,7 @@ public class SystemFacade {
     public void chargeGiftCard(int amount, Integer giftCardId, String merchantKey, String userName) {
         checkValidMerchant(merchantKey);
         checkValidGiftCard(giftCardId);
+        checkValidUser(userName);
         giftCards.get(giftCardId).charge(amount, merchantKey, userName, clock);
     }
 
