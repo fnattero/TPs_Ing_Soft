@@ -42,7 +42,7 @@ public class SystemFacadeTest {
 
     @Test
     public void test01CantClaimInvalidGiftCard(){
-        int tokenUser1 = loginSingleUser();
+        int tokenUser1 = createSessionSingleUser();
         assertThrowsLike( () -> singleUserSystemFacade.claimGiftCard(GiftCardIdUser2, tokenUser1),
                 SystemFacade.invalidGiftCardIDErrorDescription);
     }
@@ -67,13 +67,13 @@ public class SystemFacadeTest {
 
     @Test
     public void test05CanGetGiftCardBalanceOfValidGiftCard(){
-        int tokenUser1 = loginAndClaimSingleUser();
+        int tokenUser1 = createSessionAndClaimSingleUser();
         assertEquals(1000, getBalanceSingleUser(tokenUser1));
     }
 
     @Test
     public void test06CantGetGiftCardBalanceOfInvalidGiftCard(){
-        int tokenUser1 = loginAndClaimSingleUser();
+        int tokenUser1 = createSessionAndClaimSingleUser();
         assertThrowsLike( () -> singleUserSystemFacade.getGiftCardBalance(GiftCardIdUser2, tokenUser1),
                 SystemFacade.invalidGiftCardIDErrorDescription);
     }
@@ -86,22 +86,22 @@ public class SystemFacadeTest {
 
     @Test
     public void test08CantGetGiftCardBalanceOfOtherUsersGiftCard(){
-        loginAndClaimMultiUser1();
-        int tokenUser2 = loginMultiUser2();
+        createSessionAndClaimMultiUser1();
+        int tokenUser2 = createSessionMultiUser2();
         assertThrowsLike( () -> multiUserAndGiftCardSystemFacade.getGiftCardBalance(GiftCardIdUser1, tokenUser2),
                 GiftCard.NotOwnerErrorDescription );
     }
 
     @Test
     public void test09CantGetGiftCardBalanceOfUnclaimedGiftCard(){
-        int tokenUser1 = loginAndClaimMultiUser1();
+        int tokenUser1 = createSessionAndClaimMultiUser1();
         assertThrowsLike( () -> multiUserAndGiftCardSystemFacade.getGiftCardBalance(GiftCardIdUser2, tokenUser1),
                 GiftCard.CantGetBalanceOfUnclaimedCardErrorDescription );
     }
 
     @Test
     public void test10SingleUserChargesUpdateBalanceCorrectly(){
-        int tokenUser1 = loginAndClaimSingleUser();
+        int tokenUser1 = createSessionAndClaimSingleUser();
         assertBalanceSingleUserEquals(tokenUser1, 1000);
         chargeSingleUser(200, ValidMerchantKey);
         assertBalanceSingleUserEquals(tokenUser1, 800);
@@ -109,7 +109,7 @@ public class SystemFacadeTest {
 
     @Test
     public void test11MultipleUserChargesUpdateBalanceCorrectly(){
-        int[] userTokens = loginAndClaimBothUsers();
+        int[] userTokens = createSessionAndClaimBothUsers();
         chargeBothUsers(100, 200);
         chargeBothUsers(300, 600);
         assertEquals(InitialGiftCardBalance - 400, multiUserAndGiftCardSystemFacade.getGiftCardBalance(GiftCardIdUser1, userTokens[0]));
@@ -121,13 +121,13 @@ public class SystemFacadeTest {
         // Este test puede parecer redundante pero es para aclarar un aspecto del funcionamiento del modelo. Queremos mostrar que
         // si el usuario 2 chequeara el balance usando el token del usuario 1 el sistema le permitiria verlo. Hay que imaginar
         // que el que esta llamando a getBalance es el usuario 2 con el token del usuario 1.
-        int[] userTokens = loginAndClaimBothUsers();
+        int[] userTokens = createSessionAndClaimBothUsers();
         assertEquals( 1000, multiUserAndGiftCardSystemFacade.getGiftCardBalance(GiftCardIdUser1, userTokens[0]) );
     }
 
     @Test
     public void test13MerchantCantChargeWithInvalidAmount(){
-        int tokenUser1 = loginAndClaimSingleUser();
+        int tokenUser1 = createSessionAndClaimSingleUser();
         assertBalanceSingleUserEquals(tokenUser1, 1000);
         assertThrowsLike( () -> chargeSingleUser(-100, ValidMerchantKey),
                 GiftCard.InvalidAmountErrorDescription );
@@ -135,7 +135,7 @@ public class SystemFacadeTest {
 
     @Test
     public void test14MerchantCantChargeWithUnsufficientBalance(){
-        int tokenUser1 = loginAndClaimSingleUser();
+        int tokenUser1 = createSessionAndClaimSingleUser();
         assertBalanceSingleUserEquals(tokenUser1, 1000);
         assertThrowsLike( () -> chargeSingleUser(1001, ValidMerchantKey),
                 GiftCard.InsufficientBalanceErrorDescription );
@@ -143,7 +143,7 @@ public class SystemFacadeTest {
 
     @Test
     public void test15MerchantCantChargeWithInvalidGiftCardID(){
-        loginAndClaimSingleUser();
+        createSessionAndClaimSingleUser();
         assertThrowsLike( () -> singleUserSystemFacade.chargeGiftCard(200, GiftCardIdUser2, ValidMerchantKey, User1),
                 SystemFacade.invalidGiftCardIDErrorDescription );
     }
@@ -156,7 +156,7 @@ public class SystemFacadeTest {
 
     @Test
     public void test17MerchantCantChargeWithInvalidKey(){
-        int tokenUser1 = loginAndClaimSingleUser();
+        int tokenUser1 = createSessionAndClaimSingleUser();
         assertBalanceSingleUserEquals(tokenUser1, 1000);
         assertThrowsLike( () -> chargeSingleUser(200, "InvalidMercadoPagoKey"),
                 SystemFacade.invalidMerchantKeyErrorDescription );
@@ -170,14 +170,14 @@ public class SystemFacadeTest {
 
     @Test
     public void test19MerchantCantChargeGiftCardOwnedByAnotherUser(){
-        loginAndClaimBothUsers();
+        createSessionAndClaimBothUsers();
         assertThrowsLike( () -> multiUserAndGiftCardSystemFacade.chargeGiftCard(800, GiftCardIdUser1, ValidMerchantKey, User2),
                 GiftCard.NotOwnerErrorDescription );
     }
 
     @Test
     public void test20TransactionHasCorrectAmount(){
-        int tokenUser1 = loginAndClaimSingleUser();
+        int tokenUser1 = createSessionAndClaimSingleUser();
         chargeSingleUser(200, ValidMerchantKey);
         assertEquals(200, getFirstTransactionSingleUser(tokenUser1).getAmount());
     }
@@ -186,21 +186,21 @@ public class SystemFacadeTest {
     public void test21TransactionHasCorrectTime(){
         Clock clock = seqClock(BaseTime, BaseTime, BaseTime, BaseTime, BaseTime, BaseTime);
         singleUserSystemFacade = singleUserSystemFacade(clock);
-        int tokenUser1 = loginAndClaimSingleUser(); //3 clocks: create session, isExpired en claim y updateLastAccess en claim
+        int tokenUser1 = createSessionAndClaimSingleUser(); //3 clocks: create session, isExpired en claim y updateLastAccess en claim
         chargeSingleUser(200, ValidMerchantKey); //Un clock, para pasarle a transaction
         assertEquals(BaseTime, getFirstTransactionSingleUser(tokenUser1).getTime()); //2 clocks, isExpired y updateLastAcces en Transaction
     }
 
     @Test
     public void test22TransactionHasCorrectMerchantKey(){
-        int tokenUser1 = loginAndClaimSingleUser();
+        int tokenUser1 = createSessionAndClaimSingleUser();
         chargeSingleUser(200, ValidMerchantKey);
         assertEquals(ValidMerchantKey, getFirstTransactionSingleUser(tokenUser1).getMerchantKey());
     }
 
     @Test
     public void test23CantGetTransactionsOfInvalidGiftCardID(){
-        int tokenUser1 = loginAndClaimSingleUser();
+        int tokenUser1 = createSessionAndClaimSingleUser();
         chargeSingleUser(200, ValidMerchantKey);
         assertThrowsLike( () -> singleUserSystemFacade.getTransactionsFor( GiftCardIdUser2, tokenUser1),
                 SystemFacade.invalidGiftCardIDErrorDescription
@@ -209,8 +209,8 @@ public class SystemFacadeTest {
 
     @Test
     public void test24CantGetTransactionsOfAnotherUser() {
-        loginAndClaimMultiUser1();
-        int tokenUser2 = loginMultiUser2();
+        createSessionAndClaimMultiUser1();
+        int tokenUser2 = createSessionMultiUser2();
         multiUserAndGiftCardSystemFacade.chargeGiftCard(200, GiftCardIdUser1, ValidMerchantKey, User1);
 
         assertThrowsLike(() -> multiUserAndGiftCardSystemFacade.getTransactionsFor(GiftCardIdUser1, tokenUser2),
@@ -219,7 +219,7 @@ public class SystemFacadeTest {
 
     @Test
     public void test25CantGetTransactionsOfUnclaimedCard() {
-        int tokenUser1 = loginAndClaimMultiUser1();
+        int tokenUser1 = createSessionAndClaimMultiUser1();
         assertThrowsLike( ()-> multiUserAndGiftCardSystemFacade.getTransactionsFor(GiftCardIdUser2, tokenUser1),
                 GiftCard.CantGetTransactionsOfUnclaimedCardErrorDescription
         );
@@ -227,7 +227,7 @@ public class SystemFacadeTest {
 
     @Test
     public void test26SingleUserSingleGiftCardChargeTransactionsCorrectly() {
-        int tokenUser1 = loginAndClaimSingleUser();
+        int tokenUser1 = createSessionAndClaimSingleUser();
         chargeSingleUser(200, ValidMerchantKey);
         chargeSingleUser(400, ValidMerchantKey2);
         chargeSingleUser(100, ValidMerchantKey2);
@@ -241,7 +241,7 @@ public class SystemFacadeTest {
 
     @Test
     public void test27SingleUserMultipleGiftCardsChargeTransactionsCorrectly() {
-        int tokenUser1 = loginAndClaimBothCardsSingleUser();
+        int tokenUser1 = createSessionAndClaimBothCardsSingleUser();
         chargeMulti(200, GiftCardIdUser1, ValidMerchantKey, User1);
         chargeMulti(400, GiftCardIdUser2, ValidMerchantKey2, User1);
 
@@ -253,14 +253,14 @@ public class SystemFacadeTest {
 
     @Test
     public void test28MultipleUsersMultipleGiftCardsStoreTransactionsAmountsCorrectly() {
-        int[] userTokens = loginAndClaimBothUsers();
+        int[] userTokens = createSessionAndClaimBothUsers();
         chargeBothUsers(200, 400);
         assertTransactionsFirstAmounts(userTokens[0], userTokens[1], 200, 400);
     }
 
     @Test
     public void test29MultipleUsersWithMultipleGiftCardsStoreMerchantKeysCorrectly() {
-        int[] userTokens = loginAndClaimBothUsers();
+        int[] userTokens = createSessionAndClaimBothUsers();
         chargeBothUsers(200, 400);
         assertTransactionsFirstKeysDefault(userTokens[0], userTokens[1]);
     }
@@ -270,14 +270,14 @@ public class SystemFacadeTest {
         Clock clock = seqClock(BaseTime, BaseTime, BaseTime, BaseTime, BaseTime, BaseTime, BaseTime,
                 BaseTime, BaseTime, BaseTime, BaseTime, BaseTime);
         multiUserAndGiftCardSystemFacade = multiUserAndGiftCardSystemFacade(clock);
-        int[] userTokens = loginAndClaimBothUsers();
+        int[] userTokens = createSessionAndClaimBothUsers();
         chargeBothUsers(200, 400);
         assertTransactionsFirstTimesDefault(userTokens[0], userTokens[1]);
     }
 
     @Test
     public void test31MultipleUsersWithMultipleGiftCardsHaveCorrectTransactionsSize() {
-        int[] userTokens = loginAndClaimBothUsers();
+        int[] userTokens = createSessionAndClaimBothUsers();
         chargeBothUsers(200, 400);
         assertTransactionsSizeBoth(userTokens[0], userTokens[1], 1);
     }
@@ -348,34 +348,34 @@ public class SystemFacadeTest {
 
     private void assertThrowsLike(Executable executable, String message) {assertEquals(message, assertThrows(Exception.class, executable).getMessage());}
 
-    private int loginAndClaimSingleUser() {
-        int tokenUser1 = loginSingleUser();
+    private int createSessionAndClaimSingleUser() {
+        int tokenUser1 = createSessionSingleUser();
         singleUserSystemFacade.claimGiftCard(GiftCardIdUser1, tokenUser1);
         return tokenUser1;
     }
 
-    private int loginAndClaimMultiUser1() {
-        int tokenUser1 = loginMultiUser1();
+    private int createSessionAndClaimMultiUser1() {
+        int tokenUser1 = createSessionMultiUser1();
         multiUserAndGiftCardSystemFacade.claimGiftCard(GiftCardIdUser1, tokenUser1);
         return tokenUser1;
     }
 
-    private int loginAndClaimMultiUser2() {
-        int tokenUser2 = loginMultiUser2();
+    private int createSessionAndClaimMultiUser2() {
+        int tokenUser2 = createSessionMultiUser2();
         multiUserAndGiftCardSystemFacade.claimGiftCard(GiftCardIdUser2, tokenUser2);
         return tokenUser2;
     }
 
-    private int loginSingleUser() {return singleUserSystemFacade.createSessionFor(User1, PasswordUser1);}
+    private int createSessionSingleUser() {return singleUserSystemFacade.createSessionFor(User1, PasswordUser1);}
     private void chargeSingleUser(int amount, String merchantKey) {singleUserSystemFacade.chargeGiftCard(amount, GiftCardIdUser1, merchantKey, User1);}
     private int getBalanceSingleUser(int token) {return singleUserSystemFacade.getGiftCardBalance(GiftCardIdUser1, token);}
     private void assertBalanceSingleUserEquals(int token, int expected) {assertEquals(expected, getBalanceSingleUser(token));}
     private List<Transaction> getTransactionsSingleUser(int token) {return singleUserSystemFacade.getTransactionsFor(GiftCardIdUser1, token);}
     private Transaction getFirstTransactionSingleUser(int token) {return getTransactionsSingleUser(token).get(0);}
-    private int loginMultiUser1() {return multiUserAndGiftCardSystemFacade.createSessionFor(User1, PasswordUser1);}
-    private int loginMultiUser2() {return multiUserAndGiftCardSystemFacade.createSessionFor(User2, PasswordUser2);}
-    private int loginAndClaimBothCardsSingleUser() {
-        int token = loginMultiUser1();
+    private int createSessionMultiUser1() {return multiUserAndGiftCardSystemFacade.createSessionFor(User1, PasswordUser1);}
+    private int createSessionMultiUser2() {return multiUserAndGiftCardSystemFacade.createSessionFor(User2, PasswordUser2);}
+    private int createSessionAndClaimBothCardsSingleUser() {
+        int token = createSessionMultiUser1();
         multiUserAndGiftCardSystemFacade.claimGiftCard(GiftCardIdUser1, token);
         multiUserAndGiftCardSystemFacade.claimGiftCard(GiftCardIdUser2, token);
         return token;
@@ -392,9 +392,9 @@ public class SystemFacadeTest {
         };
     }
 
-    private int[] loginAndClaimBothUsers() {
-        int tokenUser1 = loginAndClaimMultiUser1();
-        int tokenUser2 = loginAndClaimMultiUser2();
+    private int[] createSessionAndClaimBothUsers() {
+        int tokenUser1 = createSessionAndClaimMultiUser1();
+        int tokenUser2 = createSessionAndClaimMultiUser2();
         return new int[]{tokenUser1, tokenUser2};
     }
 
