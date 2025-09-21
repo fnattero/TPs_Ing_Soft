@@ -28,57 +28,60 @@ class TransactionTest {
 
     @Test
     void test01ValidTransaction() {
-        Transaction transaction = new Transaction(VALID_AMOUNT, VALID_MERCHANT_KEY,validTime);
-        
-        assertEquals(VALID_AMOUNT, transaction.getAmount());
-        assertEquals(validTime, transaction.getTime());
+        Transaction transaction = newTransaction(VALID_AMOUNT, validTime);
+        assertTransactionFields(transaction, VALID_AMOUNT, validTime);
     }
 
     @Test
     void test02ValidTransactionWithPastTime() {
-        Transaction transaction = new Transaction(VALID_AMOUNT, VALID_MERCHANT_KEY, pastTime);
-        
-        assertEquals(VALID_AMOUNT, transaction.getAmount());
-        assertEquals(pastTime, transaction.getTime());
+        Transaction transaction = newTransaction(VALID_AMOUNT, pastTime);
+        assertTransactionFields(transaction, VALID_AMOUNT, pastTime);
     }
 
     @Test
     void test03ValidTransactionWithZeroAmount() {
-        Transaction transaction = new Transaction(ZERO_AMOUNT, VALID_MERCHANT_KEY, validTime);
-        
-        assertEquals(ZERO_AMOUNT, transaction.getAmount());
-        assertEquals(validTime, transaction.getTime());
+        Transaction transaction = newTransaction(ZERO_AMOUNT, validTime);
+        assertTransactionFields(transaction, ZERO_AMOUNT, validTime);
     }
 
     @Test
     void test04CurrentTimeIsValid() {
         LocalDateTime almostNow = LocalDateTime.now().minusSeconds(1);
-        assertDoesNotThrow(() -> new Transaction(VALID_AMOUNT, VALID_MERCHANT_KEY, almostNow));
+        assertDoesNotThrow(() -> newTransaction(VALID_AMOUNT, almostNow));
     }
 
     @Test
     void test05LargeAmountValue() {
-        Transaction transaction = new Transaction(MAX_AMOUNT, VALID_MERCHANT_KEY, validTime);
-        assertEquals(MAX_AMOUNT, transaction.getAmount());
-    }
-
-    @Test
-    void test06NegativeAmountThrowsException() {
-        assertThrowsLike(() -> new Transaction(NEGATIVE_AMOUNT, VALID_MERCHANT_KEY, validTime), Transaction.negativeAmountErrorDescription);
-    }
-
-    @Test
-    void test08FutureTimeThrowsException() {
-        assertThrowsLike(() -> new Transaction(VALID_AMOUNT, VALID_MERCHANT_KEY, futureTime),Transaction.futureTimeErrorDescription);
+        Transaction transaction = newTransaction(MAX_AMOUNT, validTime);
+        assertTransactionFields(transaction, MAX_AMOUNT, validTime);
     }
 
     @Test
     void test09MerchantKeyIsCorrect(){
-        Transaction transaction = new Transaction(MAX_AMOUNT, VALID_MERCHANT_KEY, validTime);
+        Transaction transaction = newTransaction(MAX_AMOUNT, validTime);
         assertEquals(VALID_MERCHANT_KEY, transaction.getMerchantKey());
+    }
+
+    @Test
+    void test06NegativeAmountThrowsException() {
+        assertThrowsLike(() -> newTransaction(NEGATIVE_AMOUNT, validTime), Transaction.negativeAmountErrorDescription);
+    }
+
+    @Test
+    void test08FutureTimeThrowsException() {
+        assertThrowsLike(() -> newTransaction(VALID_AMOUNT, futureTime), Transaction.futureTimeErrorDescription);
     }
 
     private void assertThrowsLike(Executable executable, String message) {
         assertEquals(message, assertThrows(Exception.class, executable).getMessage());
+    }
+
+    private Transaction newTransaction(int amount, LocalDateTime time) {
+        return new Transaction(amount, VALID_MERCHANT_KEY, time);
+    }
+
+    private void assertTransactionFields(Transaction transaction, int expectedAmount, LocalDateTime expectedTime) {
+        assertEquals(expectedAmount, transaction.getAmount());
+        assertEquals(expectedTime, transaction.getTime());
     }
 }

@@ -27,21 +27,11 @@ public class SystemFacadeTest {
     SystemFacade multiUserAndGiftCardSystemFacade;
 
     public SystemFacade singleUserSystemFacade(Clock clock) {
-        return new SystemFacade(
-                Map.of(VALID_USER, VALID_PASSWORD),
-                Set.of(VALID_MERCHANT_KEY, VALID_MERCHANT_KEY_2),
-                Map.of(VALID_GIFT_CARD_ID, new GiftCard(VALID_GIFT_CARD_BALANCE)),
-                clock
-        );
+        return new SystemFacade(Map.of(VALID_USER, VALID_PASSWORD), Set.of(VALID_MERCHANT_KEY, VALID_MERCHANT_KEY_2), Map.of(VALID_GIFT_CARD_ID, new GiftCard(VALID_GIFT_CARD_BALANCE)), clock);
     }
 
     public SystemFacade multiUserAndGiftCardSystemFacade(Clock clock) {
-        return new SystemFacade(
-                Map.of(VALID_USER, VALID_PASSWORD, VALID_USER_2, VALID_PASSWORD_2),
-                Set.of(VALID_MERCHANT_KEY, VALID_MERCHANT_KEY_2),
-                Map.of(VALID_GIFT_CARD_ID, new GiftCard(VALID_GIFT_CARD_BALANCE), VALID_GIFT_CARD_ID_2, new GiftCard(VALID_GIFT_CARD_BALANCE)),
-                clock
-        );
+        return new SystemFacade(Map.of(VALID_USER, VALID_PASSWORD, VALID_USER_2, VALID_PASSWORD_2), Set.of(VALID_MERCHANT_KEY, VALID_MERCHANT_KEY_2), Map.of(VALID_GIFT_CARD_ID, new GiftCard(VALID_GIFT_CARD_BALANCE), VALID_GIFT_CARD_ID_2, new GiftCard(VALID_GIFT_CARD_BALANCE)), clock);
     }
 
     @BeforeEach
@@ -53,170 +43,138 @@ public class SystemFacadeTest {
     @Test
     public void test02CantCreateTokenOnInvalidUser(){
         assertThrowsLike( () -> singleUserSystemFacade.createSessionFor(VALID_USER_2, VALID_PASSWORD),
-                singleUserSystemFacade.invalidUserAndOrPasswordErrorDescription);
+                SystemFacade.invalidUserAndOrPasswordErrorDescription);
     }
 
     @Test
     public void test03CantCreateTokenOnInvalidPassword(){
         assertThrowsLike( () -> singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD_2),
-                singleUserSystemFacade.invalidUserAndOrPasswordErrorDescription);
+                SystemFacade.invalidUserAndOrPasswordErrorDescription);
     }
 
     @Test
-    public void testcantClaimInvalidGiftCard(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
+    public void test01CantClaimInvalidGiftCard(){
+        int token = loginSingleUser();
         assertThrowsLike( () -> singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID_2, token), SystemFacade.invalidGiftCardIDErrorDescription);
     }
 
     @Test
     public void test04CanGetGiftCardBalanceOfValidGiftCard(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        assertEquals(1000, singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token));
+        int token = loginAndClaimSingleUser();
+        assertEquals(1000, balanceSingleUser(token));
     }
 
     @Test
     public void test05CantGetGiftCardBalanceOfInvalidGiftCard(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
+        int token = loginAndClaimSingleUser();
         assertThrowsLike( () -> singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID_2, token),
-                singleUserSystemFacade.invalidGiftCardIDErrorDescription);
+                SystemFacade.invalidGiftCardIDErrorDescription);
     }
 
     @Test
     public void test07CantGetGiftCardBalanceOfInvalidToken(){
         assertThrowsLike( () -> singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, -1),
-                singleUserSystemFacade.invalidTokenErrorDescription);
+                SystemFacade.invalidTokenErrorDescription);
     }
 
     @Test
     public void test08CantClaimGiftCardWithInvalidToken(){
         assertThrowsLike( () -> singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, -1),
-                singleUserSystemFacade.invalidTokenErrorDescription);
+                SystemFacade.invalidTokenErrorDescription);
     }
 
     @Test
     public void test10BalanceAfterChargeGiftCard(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        assertEquals(1000, singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token));
-
-        singleUserSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
-
-        assertEquals(800, singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token));
+        int token = loginAndClaimSingleUser();
+        assertBalanceSingleUserEquals(token, 1000);
+        chargeSingleUser(200, VALID_MERCHANT_KEY);
+        assertBalanceSingleUserEquals(token, 800);
     }
 
     @Test
     public void test11MerchantCantChargeWithInvalidKey(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        assertEquals(1000, singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token));
-
-        assertThrowsLike( () -> singleUserSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, "InvalidMercadoPagoKey", VALID_USER),
-                singleUserSystemFacade.invalidMerchantKeyErrorDescription );
+        int token = loginAndClaimSingleUser();
+        assertBalanceSingleUserEquals(token, 1000);
+        assertThrowsLike( () -> chargeSingleUser(200, "InvalidMercadoPagoKey"),
+                SystemFacade.invalidMerchantKeyErrorDescription );
     }
 
     @Test
     public void test12MerchantCantChargeWithInvalidGiftCardID(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        assertEquals(1000, singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token));
+        int token = loginAndClaimSingleUser();
+        assertBalanceSingleUserEquals(token, 1000);
 
         assertThrowsLike( () -> singleUserSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID_2, VALID_MERCHANT_KEY, VALID_USER),
-                singleUserSystemFacade.invalidGiftCardIDErrorDescription );
+                SystemFacade.invalidGiftCardIDErrorDescription );
     }
 
     @Test
     public void test13MerchantCantChargeWithInvalidAmount(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        assertEquals(1000, singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token));
-
-        assertThrowsLike( () -> singleUserSystemFacade.chargeGiftCard(-100, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER),
+        int token = loginAndClaimSingleUser();
+        assertBalanceSingleUserEquals(token, 1000);
+        assertThrowsLike( () -> chargeSingleUser(-100, VALID_MERCHANT_KEY),
                 GiftCard.InvalidAmountErrorDescription );
     }
 
     @Test
-    public void testMerchantCantChargeWithUnsufficientBalance(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        assertEquals(1000, singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token));
-
-        assertThrowsLike( () -> singleUserSystemFacade.chargeGiftCard(1001, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER),
+    public void test14MerchantCantChargeWithUnsufficientBalance(){
+        int token = loginAndClaimSingleUser();
+        assertBalanceSingleUserEquals(token, 1000);
+        assertThrowsLike( () -> chargeSingleUser(1001, VALID_MERCHANT_KEY),
                 GiftCard.InsufficientBalanceErrorDescription );
     }
 
     @Test
-    public void testMerchantCantChargeWithInvalidUser(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        assertEquals(1000, singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token));
-
+    public void test15MerchantCantChargeWithInvalidUser(){
+        int token = loginAndClaimSingleUser();
+        assertBalanceSingleUserEquals(token, 1000);
         assertThrowsLike( () -> singleUserSystemFacade.chargeGiftCard(800, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER_2),
                 GiftCard.NotOwnerErrorDescription );
     }
 
     @Test
-    public void testCantGetGiftCardBalanceOfOtherUsersGiftCard(){
-        int token = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        int token2 = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER_2, VALID_PASSWORD_2);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-
+    public void test16CantGetGiftCardBalanceOfOtherUsersGiftCard(){
+        loginAndClaimMultiUser1();
+        int token2 = loginMultiUser2();
         assertThrowsLike( () -> multiUserAndGiftCardSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token2),
                 GiftCard.NotOwnerErrorDescription );
     }
 
     @Test
-    public void testCanGetGiftCardBalanceOfOtherUsersGiftCardWithItsToken(){
-        int token = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        int token2 = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER_2, VALID_PASSWORD_2);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-
+    public void test17CanGetGiftCardBalanceOfOtherUsersGiftCardWithItsToken(){
+        int token = loginAndClaimMultiUser1();
         assertEquals( 1000, multiUserAndGiftCardSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token) );
     }
 
     @Test
-    public void testTransactionHasCorrectAmount(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        singleUserSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
-
-        assertEquals(200, singleUserSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token)
-                                    .get(0)
-                                    .getAmount());
+    public void test18TransactionHasCorrectAmount(){
+        int token = loginAndClaimSingleUser();
+        chargeSingleUser(200, VALID_MERCHANT_KEY);
+        assertEquals(200, firstTransactionSingleUser(token).getAmount());
     }
 
     @Test
-    public void testTransactionHasCorrectTime(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        singleUserSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
-        assertEquals(BASE_TIME,  singleUserSystemFacade
-                                .getTransactionsFor(VALID_GIFT_CARD_ID, token)
-                                .get(0)
-                                .getTime());
+    public void test19TransactionHasCorrectTime(){
+        int token = loginAndClaimSingleUser();
+        chargeSingleUser(200, VALID_MERCHANT_KEY);
+        assertEquals(BASE_TIME, firstTransactionSingleUser(token).getTime());
     }
 
     @Test
-    public void testTransactionHasCorrectMerchantKey(){
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        singleUserSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
-        assertEquals(VALID_MERCHANT_KEY,  singleUserSystemFacade
-                                        .getTransactionsFor(VALID_GIFT_CARD_ID, token)
-                                        .get(0)
-                                        .getMerchantKey());
+    public void test20TransactionHasCorrectMerchantKey(){
+        int token = loginAndClaimSingleUser();
+        chargeSingleUser(200, VALID_MERCHANT_KEY);
+        assertEquals(VALID_MERCHANT_KEY, firstTransactionSingleUser(token).getMerchantKey());
     }
 
     @Test
-    public void testMultipleTransactionStoresChargesCorrectly() {
-        int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        singleUserSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
-        singleUserSystemFacade.chargeGiftCard(400, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY_2, VALID_USER);
-        singleUserSystemFacade.chargeGiftCard(100, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY_2, VALID_USER);
+    public void test21MultipleTransactionStoresChargesCorrectly() {
+        int token = loginAndClaimSingleUser();
+        chargeSingleUser(200, VALID_MERCHANT_KEY);
+        chargeSingleUser(400, VALID_MERCHANT_KEY_2);
+        chargeSingleUser(100, VALID_MERCHANT_KEY_2);
 
-        List<Transaction> userTransactions = singleUserSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token);
+        List<Transaction> userTransactions = transactionsSingleUser(token);
         assertEquals(3, userTransactions.size());
         assertEquals(200, userTransactions.getFirst().getAmount());
         assertEquals(400, userTransactions.get(1).getAmount());
@@ -225,77 +183,50 @@ public class SystemFacadeTest {
 
 
     @Test
-    public void testMultipleGiftCardsChargeTransactionsCorrectly() {
-        int token = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID_2, token);
-        multiUserAndGiftCardSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
-        multiUserAndGiftCardSystemFacade.chargeGiftCard(400, VALID_GIFT_CARD_ID_2, VALID_MERCHANT_KEY_2, VALID_USER);
+    public void test22MultipleGiftCardsChargeTransactionsCorrectly() {
+        int token = loginAndClaimBothCardsSingleUser();
+        chargeMulti(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
+        chargeMulti(400, VALID_GIFT_CARD_ID_2, VALID_MERCHANT_KEY_2, VALID_USER);
 
-        assertEquals(1, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token).size());
-        assertEquals(1, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID_2, token).size());
-        assertEquals(200, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token).getFirst().getAmount());
-        assertEquals(400, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID_2, token).getFirst().getAmount());
+        assertEquals(1, transactionsMulti(VALID_GIFT_CARD_ID, token).size());
+        assertEquals(1, transactionsMulti(VALID_GIFT_CARD_ID_2, token).size());
+        assertEquals(200, transactionsMulti(VALID_GIFT_CARD_ID, token).getFirst().getAmount());
+        assertEquals(400, transactionsMulti(VALID_GIFT_CARD_ID_2, token).getFirst().getAmount());
     }
 
     @Test
-    public void testMultipleUsersWithMultipleGiftCardsStoreTransactionsAmountsCorrectly() {
-        int token = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        int token2 = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER_2, VALID_PASSWORD_2);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID_2, token2);
-        multiUserAndGiftCardSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
-        multiUserAndGiftCardSystemFacade.chargeGiftCard(400, VALID_GIFT_CARD_ID_2, VALID_MERCHANT_KEY_2, VALID_USER_2);
-
-        assertEquals(200, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token).getFirst().getAmount());
-        assertEquals(400, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID_2, token2).getFirst().getAmount());
+    public void test23MultipleUsersWithMultipleGiftCardsStoreTransactionsAmountsCorrectly() {
+        int[] ts = loginAndClaimBothUsers();
+        chargeBothUsersDefault();
+        assertFirstAmountsDefault(ts[0], ts[1]);
     }
 
     @Test
-    public void testMultipleUsersWithMultipleGiftCardsStoreMerchantKeysCorrectly() {
-        int token = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        int token2 = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER_2, VALID_PASSWORD_2);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID_2, token2);
-        multiUserAndGiftCardSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
-        multiUserAndGiftCardSystemFacade.chargeGiftCard(400, VALID_GIFT_CARD_ID_2, VALID_MERCHANT_KEY_2, VALID_USER_2);
-
-        assertEquals(VALID_MERCHANT_KEY, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token).getFirst().getMerchantKey());
-        assertEquals(VALID_MERCHANT_KEY_2, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID_2, token2).getFirst().getMerchantKey());
+    public void test24MultipleUsersWithMultipleGiftCardsStoreMerchantKeysCorrectly() {
+        int[] ts = loginAndClaimBothUsers();
+        chargeBothUsersDefault();
+        assertFirstKeysDefault(ts[0], ts[1]);
     }
 
 
     @Test
-    public void testMultipleUsersWithMultipleGiftCardsStoreTransactionsTimeCorrectly() {
-        int token = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        int token2 = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER_2, VALID_PASSWORD_2);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID_2, token2);
-        multiUserAndGiftCardSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
-        multiUserAndGiftCardSystemFacade.chargeGiftCard(400, VALID_GIFT_CARD_ID_2, VALID_MERCHANT_KEY_2, VALID_USER_2);
-
-        assertEquals(BASE_TIME, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token).getFirst().getTime());
-        assertEquals(BASE_TIME, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID_2, token2).getFirst().getTime());
+    public void test25MultipleUsersWithMultipleGiftCardsStoreTransactionsTimeCorrectly() {
+        int[] ts = loginAndClaimBothUsers();
+        chargeBothUsersDefault();
+        assertFirstTimesDefault(ts[0], ts[1]);
     }
 
     @Test
-    public void testMultipleUsersWithMultipleGiftCardsStoreTransactionsCorrectly() {
-        int token = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        int token2 = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER_2, VALID_PASSWORD_2);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID_2, token2);
-        multiUserAndGiftCardSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
-        multiUserAndGiftCardSystemFacade.chargeGiftCard(400, VALID_GIFT_CARD_ID_2, VALID_MERCHANT_KEY_2, VALID_USER_2);
-
-        assertEquals(1, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token).size());
-        assertEquals(1, multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID_2, token2).size());
+    public void test26MultipleUsersWithMultipleGiftCardsStoreTransactionsCorrectly() {
+        int[] ts = loginAndClaimBothUsers();
+        chargeBothUsersDefault();
+        assertTransactionsSizeBoth(ts[0], ts[1], 1);
     }
 
     @Test
-    public void testCantGetTransactionsOfAnotherUser() {
-        int token = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
-        int token2 = multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER_2, VALID_PASSWORD_2);
-        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
+    public void test27CantGetTransactionsOfAnotherUser() {
+        loginAndClaimMultiUser1();
+        int token2 = loginMultiUser2();
         multiUserAndGiftCardSystemFacade.chargeGiftCard(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY,  VALID_USER);
 
         assertThrowsLike(() -> multiUserAndGiftCardSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token2),
@@ -303,79 +234,40 @@ public class SystemFacadeTest {
     }
 
     @Test
-    public void testTokenSessionExpiresAfterFiveMinutesWhenClaimingGiftCard() {
-        Clock clock = new Clock(BASE_TIME) {
-            Iterator<LocalDateTime> seq = java.util.List.of(
-                    BASE_TIME,
-                    BASE_TIME.plusMinutes(6)
-            ).iterator();
-            public LocalDateTime getTime() {
-                return seq.next();
-            }
-        };
+    public void test28TokenSessionExpiresAfterFiveMinutesWhenClaimingGiftCard() {
+        Clock clock = seqClock(BASE_TIME, BASE_TIME.plusMinutes(6));
 
         singleUserSystemFacade = singleUserSystemFacade(clock);
         int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
         assertThrowsLike( () -> singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token),
-                singleUserSystemFacade.sessionHasExpiredErrorDescription);
+                SystemFacade.sessionHasExpiredErrorDescription);
     }
 
     @Test
-    public void testTokenSessionExpiresAfterFiveMinutesWhenGettingBalance() {
-        Clock clock = new Clock(BASE_TIME) {
-            Iterator<LocalDateTime> seq = java.util.List.of(
-                    BASE_TIME,
-                    BASE_TIME,
-                    BASE_TIME,
-                    BASE_TIME.plusMinutes(6)
-            ).iterator();
-            public LocalDateTime getTime() {
-                return seq.next();
-            }
-        };
+    public void test29TokenSessionExpiresAfterFiveMinutesWhenGettingBalance() {
+        Clock clock = seqClock(BASE_TIME, BASE_TIME, BASE_TIME, BASE_TIME.plusMinutes(6));
 
         singleUserSystemFacade = singleUserSystemFacade(clock);
         int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
         singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
         assertThrowsLike( () -> singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token),
-                singleUserSystemFacade.sessionHasExpiredErrorDescription);
+                SystemFacade.sessionHasExpiredErrorDescription);
     }
 
     @Test
-    public void testTokenSessionExpiresAfterFiveMinutesWhenGettingTransactions() {
-        Clock clock = new Clock(BASE_TIME) {
-            Iterator<LocalDateTime> seq = java.util.List.of(
-                    BASE_TIME,
-                    BASE_TIME,
-                    BASE_TIME,
-                    BASE_TIME.plusMinutes(6)
-            ).iterator();
-            public LocalDateTime getTime() {
-                return seq.next();
-            }
-        };
+    public void test30TokenSessionExpiresAfterFiveMinutesWhenGettingTransactions() {
+        Clock clock = seqClock(BASE_TIME, BASE_TIME, BASE_TIME, BASE_TIME.plusMinutes(6));
 
         singleUserSystemFacade = singleUserSystemFacade(clock);
         int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
         singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
         assertThrowsLike( () -> singleUserSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token),
-                singleUserSystemFacade.sessionHasExpiredErrorDescription);
+                SystemFacade.sessionHasExpiredErrorDescription);
     }
 
     @Test
-    public void testTokenSessionDoesNotExpireWhenNotInactive() {
-        Clock clock = new Clock(BASE_TIME) {
-            Iterator<LocalDateTime> seq = java.util.List.of(
-                    BASE_TIME,
-                    BASE_TIME,
-                    BASE_TIME.plusMinutes(2),
-                    BASE_TIME.plusMinutes(6),
-                    BASE_TIME.plusMinutes(6)
-            ).iterator();
-            public LocalDateTime getTime() {
-                return seq.next();
-            }
-        };
+    public void test31TokenSessionDoesNotExpireWhenNotInactive() {
+        Clock clock = seqClock(BASE_TIME, BASE_TIME, BASE_TIME.plusMinutes(2), BASE_TIME.plusMinutes(6), BASE_TIME.plusMinutes(6));
 
         singleUserSystemFacade = singleUserSystemFacade(clock);
         int token = singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);
@@ -383,21 +275,78 @@ public class SystemFacadeTest {
         assertDoesNotThrow( () -> singleUserSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token));
     }
 
-    private void assertThrowsLike(Executable executable, String message) {
-        assertEquals(message,
-                assertThrows(Exception.class, executable)
-                        .getMessage());
+    private void assertThrowsLike(Executable executable, String message) {assertEquals(message, assertThrows(Exception.class, executable).getMessage());}
+
+    private int loginAndClaimSingleUser() {
+        int token = loginSingleUser();
+        singleUserSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
+        return token;
+    }
+
+    private int loginAndClaimMultiUser1() {
+        int token = loginMultiUser1();
+        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
+        return token;
+    }
+
+    private int loginAndClaimMultiUser2() {
+        int token = loginMultiUser2();
+        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID_2, token);
+        return token;
+    }
+
+    private int loginSingleUser() {return singleUserSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);}    
+    private void chargeSingleUser(int amount, String merchantKey) {singleUserSystemFacade.chargeGiftCard(amount, VALID_GIFT_CARD_ID, merchantKey, VALID_USER);}    
+    private int balanceSingleUser(int token) {return singleUserSystemFacade.getGiftCardBalance(VALID_GIFT_CARD_ID, token);}    
+    private void assertBalanceSingleUserEquals(int token, int expected) {assertEquals(expected, balanceSingleUser(token));}
+    private List<Transaction> transactionsSingleUser(int token) {return singleUserSystemFacade.getTransactionsFor(VALID_GIFT_CARD_ID, token);}    
+    private Transaction firstTransactionSingleUser(int token) {return transactionsSingleUser(token).get(0);}    
+    private int loginMultiUser1() {return multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER, VALID_PASSWORD);}    
+    private int loginMultiUser2() {return multiUserAndGiftCardSystemFacade.createSessionFor(VALID_USER_2, VALID_PASSWORD_2);}    
+    private int loginAndClaimBothCardsSingleUser() {
+        int token = loginMultiUser1();
+        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID, token);
+        multiUserAndGiftCardSystemFacade.claimGiftCard(VALID_GIFT_CARD_ID_2, token);
+        return token;
+    }
+    private void chargeMulti(int amount, Integer giftCardId, String merchantKey, String userName) {multiUserAndGiftCardSystemFacade.chargeGiftCard(amount, giftCardId, merchantKey, userName);}    
+    private List<Transaction> transactionsMulti(int giftCardId, int token) {return multiUserAndGiftCardSystemFacade.getTransactionsFor(giftCardId, token);}    
+    private Transaction firstTransactionMulti(int giftCardId, int token) {return transactionsMulti(giftCardId, token).get(0);}    
+    private Clock seqClock(LocalDateTime... times) {
+        return new Clock(times[0]) {
+            Iterator<LocalDateTime> seq = java.util.List.of(times).iterator();
+            public LocalDateTime getTime() { return seq.next(); }
+        };
+    }
+
+    private int[] loginAndClaimBothUsers() {
+        int t1 = loginAndClaimMultiUser1();
+        int t2 = loginAndClaimMultiUser2();
+        return new int[]{t1, t2};
+    }
+
+    private void chargeBothUsersDefault() {
+        chargeMulti(200, VALID_GIFT_CARD_ID, VALID_MERCHANT_KEY, VALID_USER);
+        chargeMulti(400, VALID_GIFT_CARD_ID_2, VALID_MERCHANT_KEY_2, VALID_USER_2);
+    }
+
+    private void assertFirstAmountsDefault(int t1, int t2) {
+        assertEquals(200, firstTransactionMulti(VALID_GIFT_CARD_ID, t1).getAmount());
+        assertEquals(400, firstTransactionMulti(VALID_GIFT_CARD_ID_2, t2).getAmount());
+    }
+
+    private void assertFirstKeysDefault(int t1, int t2) {
+        assertEquals(VALID_MERCHANT_KEY, firstTransactionMulti(VALID_GIFT_CARD_ID, t1).getMerchantKey());
+        assertEquals(VALID_MERCHANT_KEY_2, firstTransactionMulti(VALID_GIFT_CARD_ID_2, t2).getMerchantKey());
+    }
+
+    private void assertFirstTimesDefault(int t1, int t2) {
+        assertEquals(BASE_TIME, firstTransactionMulti(VALID_GIFT_CARD_ID, t1).getTime());
+        assertEquals(BASE_TIME, firstTransactionMulti(VALID_GIFT_CARD_ID_2, t2).getTime());
+    }
+
+    private void assertTransactionsSizeBoth(int t1, int t2, int expected) {
+        assertEquals(expected, transactionsMulti(VALID_GIFT_CARD_ID, t1).size());
+        assertEquals(expected, transactionsMulti(VALID_GIFT_CARD_ID_2, t2).size());
     }
 }
-
-//checkear que no se pueda operar en una tarjeta agena. Checkear transactions de user. sale updates balance. checkear user en charge
-// se puede operar con dos tarjetas.
-//test con dos usuarios.
-
-//preguntar por el override. Preguntar si el charge de merchant tiene que mandar username.
-
-//sacasr override
-//pasar username
-// chequear que un user con el token de otro pueda ver su balance
-
-//si dos transactions son de la misma tarjeta
