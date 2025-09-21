@@ -23,11 +23,7 @@ public class TokenSessionTest {
     @Test
     public void test02ExpiredWhenNowIsAfterExpireTime() {
         Clock myClock = new Clock(BASE) {
-            Iterator<LocalDateTime> seq = java.util.List.of(
-                    BASE,
-                    BASE,
-                    BASE.plusMinutes(5)
-            ).iterator();
+            Iterator<LocalDateTime> seq = java.util.List.of(BASE, BASE, BASE.plusMinutes(5)).iterator();
             public LocalDateTime getTime() {
                 return seq.next();
             }
