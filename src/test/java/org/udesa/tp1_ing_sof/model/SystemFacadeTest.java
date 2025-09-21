@@ -226,7 +226,14 @@ public class SystemFacadeTest {
     }
 
     @Test
-    public void test26SingleUserSingleGiftCardChargeTransactionsCorrectly() {
+    public void test26CantGetTransactionsOfInvalidToken(){
+        int tokenUser1 = createSessionAndClaimSingleUser();
+        assertThrowsLike( () -> singleUserSystemFacade.getTransactionsFor(GiftCardIdUser1, -1),
+                SystemFacade.invalidTokenErrorDescription );
+    }
+
+    @Test
+    public void test27SingleUserSingleGiftCardChargeTransactionsCorrectly() {
         int tokenUser1 = createSessionAndClaimSingleUser();
         chargeSingleUser(200, ValidMerchantKey);
         chargeSingleUser(400, ValidMerchantKey2);
@@ -240,7 +247,7 @@ public class SystemFacadeTest {
     }
 
     @Test
-    public void test27SingleUserMultipleGiftCardsChargeTransactionsCorrectly() {
+    public void test28SingleUserMultipleGiftCardsChargeTransactionsCorrectly() {
         int tokenUser1 = createSessionAndClaimBothCardsSingleUser();
         chargeMulti(200, GiftCardIdUser1, ValidMerchantKey, User1);
         chargeMulti(400, GiftCardIdUser2, ValidMerchantKey2, User1);
@@ -252,21 +259,21 @@ public class SystemFacadeTest {
     }
 
     @Test
-    public void test28MultipleUsersMultipleGiftCardsStoreTransactionsAmountsCorrectly() {
+    public void test29MultipleUsersMultipleGiftCardsStoreTransactionsAmountsCorrectly() {
         int[] userTokens = createSessionAndClaimBothUsers();
         chargeBothUsers(200, 400);
         assertTransactionsFirstAmounts(userTokens[0], userTokens[1], 200, 400);
     }
 
     @Test
-    public void test29MultipleUsersWithMultipleGiftCardsStoreMerchantKeysCorrectly() {
+    public void test30MultipleUsersWithMultipleGiftCardsStoreMerchantKeysCorrectly() {
         int[] userTokens = createSessionAndClaimBothUsers();
         chargeBothUsers(200, 400);
         assertTransactionsFirstKeysDefault(userTokens[0], userTokens[1]);
     }
 
     @Test
-    public void test30MultipleUsersWithMultipleGiftCardsStoreTransactionsTimeCorrectly() {
+    public void test31MultipleUsersWithMultipleGiftCardsStoreTransactionsTimeCorrectly() {
         Clock clock = seqClock(BaseTime, BaseTime, BaseTime, BaseTime, BaseTime, BaseTime, BaseTime,
                 BaseTime, BaseTime, BaseTime, BaseTime, BaseTime);
         multiUserAndGiftCardSystemFacade = multiUserAndGiftCardSystemFacade(clock);
@@ -276,14 +283,14 @@ public class SystemFacadeTest {
     }
 
     @Test
-    public void test31MultipleUsersWithMultipleGiftCardsHaveCorrectTransactionsSize() {
+    public void test32MultipleUsersWithMultipleGiftCardsHaveCorrectTransactionsSize() {
         int[] userTokens = createSessionAndClaimBothUsers();
         chargeBothUsers(200, 400);
         assertTransactionsSizeBoth(userTokens[0], userTokens[1], 1);
     }
 
     @Test
-    public void test32TokenSessionExpiresAndCeasesToExistAfterFiveMinutesWhenClaimingGiftCard() {
+    public void test33TokenSessionExpiresAndCeasesToExistAfterFiveMinutesWhenClaimingGiftCard() {
         Clock clock = seqClock(BaseTime, BaseTime.plusMinutes(6));
 
         singleUserSystemFacade = singleUserSystemFacade(clock);
@@ -295,7 +302,7 @@ public class SystemFacadeTest {
     }
 
     @Test
-    public void test33TokenSessionExpiresAndCeasesToExistAfterFiveMinutesWhenGettingBalance() {
+    public void test34TokenSessionExpiresAndCeasesToExistAfterFiveMinutesWhenGettingBalance() {
         Clock clock = seqClock(BaseTime, BaseTime, BaseTime, BaseTime.plusMinutes(6));
 
         singleUserSystemFacade = singleUserSystemFacade(clock);
@@ -308,7 +315,7 @@ public class SystemFacadeTest {
     }
 
     @Test
-    public void test34TokenSessionExpiresAndCeasesToExistAfterFiveMinutesWhenGettingTransactions() {
+    public void test35TokenSessionExpiresAndCeasesToExistAfterFiveMinutesWhenGettingTransactions() {
         Clock clock = seqClock(BaseTime, BaseTime, BaseTime, BaseTime.plusMinutes(6));
 
         singleUserSystemFacade = singleUserSystemFacade(clock);
@@ -321,7 +328,7 @@ public class SystemFacadeTest {
     }
 
     @Test
-    public void test35TokenSessionDoesNotExpireWhenNotInactive() {
+    public void test36TokenSessionDoesNotExpireWhenNotInactive() {
         //el plusMinutes(2) renueva el contador de la sesion, a los 6 minutos desde la creación no vence porque hubo actividad a los dos minutos.
         Clock clock = seqClock(BaseTime, BaseTime, BaseTime.plusMinutes(2), BaseTime.plusMinutes(6), BaseTime.plusMinutes(6));
 
@@ -332,7 +339,7 @@ public class SystemFacadeTest {
     }
 
     @Test
-    public void test36UserCanCreateAnotherSessionAfterCurrentOneExpires(){
+    public void test37UserCanCreateAnotherSessionAfterCurrentOneExpires(){
         Clock clock = seqClock(BaseTime, BaseTime.plusMinutes(6), BaseTime.plusMinutes(6), BaseTime.plusMinutes(6), BaseTime.plusMinutes(6));
 
         singleUserSystemFacade = singleUserSystemFacade(clock);
