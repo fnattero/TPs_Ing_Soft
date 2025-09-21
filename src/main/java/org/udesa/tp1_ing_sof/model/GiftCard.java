@@ -30,7 +30,7 @@ public class GiftCard {
     public int getBalance(String user) { return state.getBalance(this, user); }
     public String getOwner() { return state.getOwner(this); }
     public List<Transaction> getTransactions(String user) { return state.getTransactions(this, user); }
-    public boolean isOwnedBy(String user) { return user != null && user.equals(getOwner()); }
+    public boolean isOwnedBy(String user) { return user.equals(getOwner()); }
 
     private static abstract class GiftCardState {
         abstract void claimCard(GiftCard card, String owner);
